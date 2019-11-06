@@ -1,0 +1,297 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\alph*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Performance \& Benchmarking}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Questions}
+
+\begin{QandA}
+   \item What is the difference between \textit{throughput} and \textit{latency}?
+        \begin{answered}
+        \textbf{Latency} is the time required to finish a given task, whereas \textbf{Throughput} is the number of tasks that can be finished per unit time.
+        \end{answered}
+        
+    \item Which is easier to improve and how?
+        \begin{answered}
+        Throughput is easier to improve, and this can be done by introducing \textbf{parallelism}.
+        \end{answered}
+        
+    \item What is CPI?
+        \begin{answered}
+        Cycles per instruction. For \textit{example}, in the single cycle LC4 implementation, the \textbf{CPI} is \textbf{1}.
+        \end{answered}
+        
+    \item Which is a faster processor - Processor A (5 GHz, 2 CPI) or Processor B (3 GHz, 1 CPI)?
+        \begin{answered}
+        Processor B is actually faster. B will have a lower latency than A. Most marketing material will ignore these dynamic instruction counts and report clock rate only.
+        \end{answered}
+        
+    \item What are the basic CPU performance equations?
+        \begin{answered}
+        \begin{equation}
+            Latency = \frac{seconds}{insn} = \frac{cycles}{insn} \times \frac{seconds}{cycle}
+        \end{equation}
+        \begin{equation}
+            Throughput = \frac{insn}{second} = \frac{insn}{cycle} \times \frac{cycle}{second}
+        \end{equation}        
+        \end{answered}
+
+    \item What is another way of looking at Latency?
+        \begin{answered}
+        \begin{equation}
+            Latency = \frac{seconds}{program} = \frac{insn}{program} \times \frac{cycle}{insn} \times \frac{seconds}{cycle}
+        \end{equation}
+        \end{answered}
+
+    \item How is throughput usually measured?
+        \begin{answered}
+        Throughput is usually measured as \textbf{MIPS} - millions of instructions per second. For \textit{example}, if you have CPI = 2 and a clock speed of 500MHz, you can use the above equation for throughput to solve the following.
+        
+        $Throughput$ = $\frac{1}{2} \times 500$ = $250$ MIPS
+        \end{answered}
+        
+    \item What is the CPI of a program that executes an equal number of Integer, Floating Point and Memory operations, where the CPI of each type is 1, 2 and 3 respectively?
+        \begin{answered}
+        $CPI$ = $0.33*1+0.33*2+0.33*3$ = $2$ CPI
+        \end{answered}
+        
+    \item What is the CPI of a program that has Integer ALU (50\%, 1 cycle), Load (20\%, 5 cycle), Store (10\%, 1 cycle) and Branch (20\%, 2 cycle)?
+        \begin{answered}
+        $CPI_{base}$ = $0.5*1+0.2*5+0.1*1+0.2*2$ = $2$ CPI 
+        \end{answered}
+        
+    \item In the above question, which would improve performance more? (A) Branch prediction to reduce branch cost to 1 cycle or (B) faster data memory to reduce load cost to 3 cycles?
+        \begin{answered}
+        Option (B) will result in better performance because:
+        
+        $CPI_{A}$ = $0.5*1+0.2*5+0.1*1+0.2*1$ = $1.8$ CPI
+        
+        $CPI_{B}$ = $0.5*1+0.2*3+0.1*1+0.2*2$ = $1.6$ CPI
+        \end{answered}
+        
+    \item If a program C is 1x faster than A, how many cycles does C run for if A runs for 200 cycles?
+        \begin{answered}
+        The same number of cycles as A. This is just to illustrate some of the nuances of understanding speedups (1x, 2x, 2.3x) versus percentages (0\% increase, 100\% increase, etc.)  
+        \end{answered}
+    
+    \item What if program C is 1.5x faster than A?
+        \begin{answered}
+        C will then run for $\frac{200}{1.5}$ = $133$ cycles
+        \end{answered}
+        
+    \item How do you average Latency and Throughput?
+        \begin{answered}
+        You can find mean \textit{Latency} by using a simple \textbf{Arithmetic Mean}. But since \textit{Throughput} is inversely proportional to time, you must use a \textbf{Harmonic Mean} instead. 
+        
+        \textit{Example:} the average of 1 mile at 30 mph and 1 mile at 90 mph is not 60 mph. Instead, you can do the following:
+        
+        For the first mile: $\frac{1}{30}$ = $0.0333$ hours per mile
+        
+        For the second mile: $\frac{1}{90}$ = $0.0111$ hours per mile
+        
+        These can then be averaged to get $\frac{0.0333+0.0111}{2}$ = $0.0222$ hours per mile, which can then be converted to $mph$ to get 45 miles per hour.
+        \end{answered}
+        
+    \item What are systematic errors?
+        \begin{answered}
+        This is measurement bias. You must make sure you are measuring the system when it is in a steady state. Vary experimental setup and identify appropriate statistics.
+        \end{answered}
+        
+    \item What are random errors?
+        \begin{answered}
+        Perform the experiment many times and measure the statistics. Distributions of errors matter more than individual absolute values.
+        \end{answered}
+        
+    \item What is Amdahl's Law?
+        \begin{answered}
+        It helps analyze, in advance, how much of a performance boost you may receive by optimizing a specific part of your algorithm. 
+        \begin{equation}
+            Speedup = \frac{1}{(1-P)+\frac{P}{S}}
+        \end{equation}
+        $P$ = proportion of running time affected by the optimization
+        
+        $S$ = speedup
+        \end{answered}
+        
+    \item What if 25\% of a program is speedup by 2x?
+        \begin{answered}
+        $Speedup$ = $\frac{1}{(1-0.25) + \frac{0.25}{2}}$ = $\frac{1}{0.75 + 0.125}$ = $\frac{1}{0.825}$ = 1.14x
+        \end{answered}
+        
+    \item What if 25\% of a program is speedup by $\infty$?
+        \begin{answered}
+        $Speedup$ = $\frac{1}{(1-0.25) + \frac{0.25}{\infty}}$ = $\frac{1}{0.75}$ = 1.33x
+        \end{answered}
+        
+    \item What is Amdahl's Law for Parallelization?
+        \begin{answered}
+        It helps analyze, in advance, how much of a performance boost you may receive by adding parallelism to a specific part of your algorithm. 
+        \begin{equation}
+            Speedup = \frac{1}{(1-P)+\frac{P}{N}}
+        \end{equation}
+        $P$ = proportion of parallel code
+        
+        $S$ = number of threads
+        \end{answered}
+    
+    \item What is the maximum speedup for a program that is 10\% serial?
+        \begin{answered}
+        $Speedup$ = $\frac{1}{(1-0.9) + \frac{0.9}{X}}$ = $\frac{1}{0.1 + \frac{0.9}{X}}$
+        
+        If $X$ is made very large such that $\frac{0.9}{X}$ is approximately $0$, then:
+        
+        $Speedup$ = $\frac{1}{(1-0.9) + \frac{0.9}{X}}$ = $\frac{1}{0.1 + \frac{0.9}{X}}$ = $\frac{1}{0.1}$ = 10x
+        \end{answered}
+
+    \item What is the maximum speedup for a program that is 1\% serial?
+        \begin{answered}
+        $Speedup$ = $\frac{1}{(1-0.99) + \frac{0.99}{X}}$ = $\frac{1}{0.01 + \frac{0.99}{X}}$
+        
+        If $X$ is made very large such that $\frac{0.99}{X}$ is approximately $0$, then:
+        
+        $Speedup$ = $\frac{1}{(1-0.99) + \frac{0.99}{X}}$ = $\frac{1}{0.01 + \frac{0.99}{X}}$ = $\frac{1}{0.01}$ = 100x
+        \end{answered}
+        
+    \item What is Little's Law?
+        \begin{answered}
+        Little's Law helps make decisions in queuing systems, with the assumption that \textit{arrival rate} = \textit{departure rate}.
+        
+        \begin{equation}
+            L = \lambda \times W
+        \end{equation}
+        $L$ = items in the system
+        
+        $\lambda$ = average arrival rate
+        
+        $W$ = average wait time 
+        \end{answered}
+    
+    \item What is the intuition behind Little's Law for throughput?
+        \begin{answered}
+        To get high throughput ($\lambda$), we need to either reduce latency per request ($W$) or service more requests in parallel, i.e increase $L$.
+        \end{answered}
+\end{QandA}
+
+\clearpage 
+
+\section{Textbook Notes}
+
+\begin{enumerate}
+    \item \textbf{Throughput \& Response Time (Latency):} 
+    
+    \quad By replacing the processor in a computer with a faster version, you will most likely decrease response time and almost always improve throughput. By adding more processors to a system that is using multiple processors for different/separate tasks, you will most likely not improve response time (latency), but improve throughput only. But if the demand for processing was as large as the throughput, this could improve both latency and throughput.
+    
+    \item \textbf{Performance \& Latency:}
+    \begin{equation}
+    Performance_{X} = \frac{1}{Execution\ Time_{X}}
+    \end{equation}
+    
+    \textit{"X is $n$ times faster than Y"} is equivalent to: 
+    \begin{equation}
+    \frac{Performance_{X}}{Performance_{Y}} = n
+    \end{equation}
+    
+    \item \textbf{Elapsed Time vs CPU Time:}
+    
+    \quad A processor may work on several programs simultaneously. Here, a system might try to optimize throughput rather than attempt to minimize elapsed time for one specific program. CPU time recognizes this distinction and it is the time the CPU spends computing for a specific task and does not include time spent waiting for I/O or running other programs. CPU time is further divided into \textit{user CPU time} and \textit{system CPU time}.
+    
+    \item \textbf{CPU Performance Factors:}
+    
+    \begin{equation}
+        \text{CPU execution time} = \text{CPU clock cycles} \times \text{clock cycle time}
+    \end{equation}
+    
+    And since \textit{clock cycle time} = $\frac{1}{clock\ rate}$
+    \begin{equation}
+        \text{CPU execution time} = \text{CPU clock cycles} \times \frac{1}{\text{clock rate}}
+    \end{equation}
+    
+    \item \textbf{Problem 1:} Our favorite program runs in 10 seconds on computer A, which has a 2 GHz clock. We are trying to help a computer designer build a computer, B, which will run this program in 6 seconds. The designer has determined that a substantial increase in the clock rate is possible, but this increases will affect the rest of the CPU design, causing computer B to require 1.2 times as many clock cycles as computer A for this program. What clock rate should we tell the designer to target?
+        
+    \begin{equation*}
+        CPU\ Time_{A} = \frac{CPU\ clock\ cycles_{A}}{Clock\ rate_{A}}
+    \end{equation*}
+    \begin{equation*}
+        CPU\ clock\ cycles_{A} = Clock\ rate_{A} \times CPU\ Time_{A}
+    \end{equation*}
+    \begin{equation*}
+        CPU\ clock\ cycles_{A} = 2\ GHz \times 10\ seconds = 2 \times 10^{9} \times 10 = 20 \times 10^{9}
+    \end{equation*}
+    
+    And from the problem, we are told that computer B will require 1.2 times as many clock cycles as computer A. We know that $CPU\ Time_{B}$ = 6 seconds.
+    
+    \begin{equation*}
+        Clock\ rate_{B} = \frac{CPU\ clock\ cycles_{B}}{CPU\ Time_{B}}
+    \end{equation*}  
+    \begin{equation*}
+        Clock\ rate_{B} = \frac{1.2 \times CPU\ clock\ cycles_{A}}{CPU\ Time_{B}} = \frac{1.2 \times 20 \times 10^{9}}{6}
+    \end{equation*}  
+    \begin{equation*}
+        Clock\ rate_{B} = 4 \times 10^{9}\ cycles\ per\ second = 4\ GHz
+    \end{equation*}  
+    
+    \item \textbf{Instruction Performance:}
+    
+    \begin{equation*}
+        CPU\ clock\ cycles = \# Instructions \times Avg\ CPI
+    \end{equation*}
+    
+    \item \textbf{Problem 2:} Suppose we have two implementations of the same instruction set architecture. Computer A has a clock cycle time of 250ps and a CPI of 2.0 for some program, and computer B has a clock cycle time of 500ps and a CPI of 1.2 for the same program. Which computer is faster for this program and by how much?
+    
+    Let us assume that this program has $n$ instructions.
+    
+    \begin{equation*}
+        CPU\ clock\ cycles_{A} = n \times 2.0
+    \end{equation*}
+    \begin{equation*}
+        CPU\ clock\ cycles_{B} = n \times 1.2
+    \end{equation*}
+    
+    The CPU Time can then be calculated as follows:
+    
+    \begin{equation*}
+        CPU\ time_{A} = CPU\ clock\ cycles_{A} \times Clock\ cycle\ time_{A} = n \times 2.0 \times 250\ ps
+    \end{equation*}
+    \begin{equation*}
+        CPU\ time_{B} = CPU\ clock\ cycles_{B} \times Clock\ cycle\ time_{B} = n \times 1.2 \times 500\ ps
+    \end{equation*}    
+    
+    The speedup is therefore:
+    
+    \begin{equation*}
+        Speedup = \frac{CPU\ time_{B}}{CPU\ time_{A}} = \frac{n \times 1.2 \times 500\ ps}{n \times 2.0 \times 250\ ps} = 1.2 \times 
+    \end{equation*}
+    
+    \item \textbf{Classic CPU Performance Equation}
+    
+    \begin{equation}
+        CPU\ Time = Insn\ Count \times CPI \times Clock\ cycle\ time
+    \end{equation}
+    
+    \begin{equation}
+        CPU\ Time = \frac{Insn\ Count \times CPI}{Clock\ cycle\ rate}
+    \end{equation}
+    
+\end{enumerate}
+
+
+\end{document}
+
