@@ -292,6 +292,126 @@
     
 \end{enumerate}
 
+\clearpage
+
+\section{Midterm Exams}
+
+\subsection{Spring 2015 : CIS501}
+
+\begin{QandA}
+   \item Assume a typical program has the following instruction type breakdown: 30\% loads, 15\% stores, 50\% adds, 5\% multiplies. Assume the current generation processors have the following instruction latencies: 2 cycles, 4 cycles, 1 cycle and 15 cycles respectively. If for the next generation design you could pick one type of instruction to make twice as fast (half the latency), which type would you pick?
+        \begin{answered}
+        \begin{equation*}
+            CPI_{current} = 0.30 * 2 + 0.15 * 4 + 0.5 * 1 + 0.05 * 15
+        \end{equation*}
+        \begin{equation*}
+            CPI_{current} = 0.60 + 0.60 + 0.5 + 0.75 = 2.45
+        \end{equation*}
+        Each of these halved would be $0.30$, $0.30$, $0.25$ and $0.375$ respectively. Therefore it would be best to pick the \textbf{multiply} instructions for this optimization. The resulting $CPI$ would then be:
+        
+        \begin{equation*}
+            CPI_{updated} = 0.60 + 0.60 + 0.5 + 0.375 = 2.075
+        \end{equation*}
+        \end{answered}
+        
+    \item You are deciding between two optimizations for a piece of software. Optimization A will affect half of the program's execution and accelerate that by 10\%. Optimization B will affect one third of the program's execution and accelerate that by 40\%. Which optimization will improve the program's running time more?
+    
+    \begin{equation*}
+        Speedup_{A} = \frac{1}{(1-0.5) + \frac{0.5}{1.1}} = \frac{1}{0.5 + 0.4545} = \frac{1}{0.9545}
+    \end{equation*}
+    \begin{equation*}
+        Speedup_{B} = \frac{1}{(1-0.33) + \frac{0.33}{1.4}} = \frac{1}{0.66 + 0.2354} = \frac{1}{0.8954}
+    \end{equation*}    
+    
+    Therefore, $Speedup_{B} > Speedup_{A}$
+\end{QandA}
+
+\subsection{Fall 2015 : CIS501}
+
+\begin{QandA}
+   \item Assume a typical program has the following instruction type breakdown: 25\% loads, 10\% stores, 60\% adds, 5\% multiplies. Assume the current generation processors have the following instruction latencies: 3 cycles, 5 cycles, 1 cycle and 12 cycles respectively. If for the next generation design you could pick one type of instruction to make twice as fast (half the latency), which type would you pick?
+        \begin{answered}
+        \begin{equation*}
+            CPI_{current} = 0.25 * 3 + 0.1 * 5 + 0.6 * 1 + 0.05 * 12
+        \end{equation*}
+        \begin{equation*}
+            CPI_{current} = 0.75 + 0.5 + 0.6 + 0.6 = 2.45
+        \end{equation*}
+        Each of these halved would be $0.375$, $0.25$, $0.3$ and $0.3$ respectively. Therefore it would be best to pick the \textbf{load} instructions for this optimization. The resulting $CPI$ would then be:
+        
+        \begin{equation*}
+            CPI_{updated} = 0.375 + 0.5 + 0.6 + 0.6 = 2.075
+        \end{equation*}
+        \end{answered}
+        
+    \item Profiling of a simulator reveals that it spends $\frac{1}{3}$ of it's time parsing the trace file. With an infinitely-fast parser, how much of a speedup would this yield for the overall simulation?
+        \begin{answered}
+        We can use \textit{Amdahl's Law} to find out how much of a speedup this will yield.
+        \begin{equation*}
+            Speedup = \frac{1}{(1-P) + \frac{P}{S}}
+        \end{equation*}
+        \begin{equation*}
+            Speedup = \frac{1}{(1-0.33) + \frac{0.33}{\infty}} = \frac{1}{0.66} = 1.515 \times 
+        \end{equation*}        
+        \end{answered}
+\end{QandA}
+
+\subsection{Fall 2016: CIS501}
+
+\begin{QandA}
+   \item What is easier to improve: bandwidth or latency?
+        \begin{answered}
+        Bandwidth is easier to improve.
+        \end{answered}
+    \item What performance law ($L=\lambda W$) describes the behaviour of a queuing system?
+        \begin{answered}
+        Little's Law
+        \end{answered}
+\end{QandA}
+
+\subsection{Spring 2016 : CIS371}
+
+\begin{QandA}
+   \item Assume a typical program has the following instruction type breakdown: 10\% loads, 15\% stores, 15\% branches, 55\% adds, 5\% divides. Assume the current generation processors have the following instruction latencies: 7 cycles, 10 cycles, 4 cycle, 4 cycle and 5 cycles respectively. 
+        \begin{answered}
+        \begin{equation*}
+            CPI_{current} = 0.10 * 7 + 0.15 * 10 + 0.15 * 4 + 0.55 * 4 + 0.05 * 5
+        \end{equation*}
+        \begin{equation*}
+            CPI_{current} = 0.70 + 1.5 + 0.6 + 2.2 + 0.25 = 5.25
+        \end{equation*}
+        
+        \textit{(1) Will tripling the load latency and halving the store latency improve this program?}
+        
+        \textbf{Answer:} No.
+        \begin{equation*}
+            CPI_{CASE-1} = 0.10 * 21 + 0.15 * 5 + 0.15 * 4 + 0.55 * 4 + 0.05 * 5 = 5.9
+        \end{equation*}
+        
+        \ 
+        
+        \textit{(2) Leave the load latency unchanged but add 50\% to the store latency and cut divide latency to just 2 cycles. Will this improve the program?}
+        
+        \textbf{Answer:} No.
+        \begin{equation*}
+            CPI_{CASE-2} = 0.10 * 7 + 0.15 * 15 + 0.15 * 4 + 0.55 * 4 + 0.05 * 2 = 5.85
+        \end{equation*}
+        
+        \ 
+        
+        \textit{(3) Or should it just be left as it is?}
+        
+        \textbf{Answer:} Yes.
+        
+        \ 
+        
+        \textit{(4) What is the speedup of the fastest method compared to the other two methods?}
+        
+        \textbf{Answer:} The original method is $\frac{5.9}{5.25}$ = 1.12$\times$ faster than $CPI_{CASE-1}$. The original method is $\frac{5.85}{5.25}$ = 1.11$\times$ faster than $CPI_{CASE-2}$
+        
+        
+        \end{answered}
+\end{QandA}
 
 \end{document}
 
