@@ -356,7 +356,7 @@
         \end{answered}
 \end{QandA}
 
-\subsection{Fall 2016: CIS501}
+\subsection{Spring 2016: CIS501}
 
 \begin{QandA}
    \item What is easier to improve: bandwidth or latency?
@@ -411,6 +411,219 @@
         
         
         \end{answered}
+\end{QandA}
+
+\subsection{Spring 2017 : CIS371}
+
+\begin{QandA}
+   \item Virtually all smart phones sold in the US contain an ARM CPU designed by either Apple or Qualcomm.
+    (These are not the only games in town, but Qualcomm dominates in non-Apple phones, especially
+    in the US, through heavy-handed patent licensing agreements on cellular radio components.) In a
+    constant effort to one-up each other’s performance, Qualcomm has come across a dumpster-full of
+    internal Apple documents, including specs for Apple’s upcoming A371 processor for the next iPhone.
+    The specs include the breakdown of instructions Apple typically sees in iPhone programs, and the
+    A371’s latencies for each instruction:
+
+    Load - 5\% - 3 cycles
+
+    Add - 10\% - 5 cycles
+
+    Divide - 10\% - 8 cycles
+
+    Branch - 50\% - 2 cycles
+
+    Shift Left - 15\% - 5 cycles
+
+    Shift Right - 10\% - 1 cycle
+    
+    Along with this table, the internal specs include some notes on possible improvements that weren’t
+    implemented. Qualcomm decides to analyze these and quickly design a processor that mirrors Apple’s
+    but incorporates the best of these alternatives.
+
+    \begin{answered}
+    
+    \textit{(a) Calculate the CPI of Apple’s A371 processor:}
+    \begin{equation*}
+        CPI_{A371} = 0.05 * 3 + 0.1 * 5 + 0.1 * 8 + 0.5 * 2 + 0.15 * 5 + 0.1 * 1
+    \end{equation*}
+    \begin{equation*}
+        CPI_{A371} = 0.15 + 0.5 + 0.8 + 1 + 0.75 + 0.1 = 3.30
+    \end{equation*}
+    
+    \ 
+    
+    \textit{(b) Variant 1: Apple’s notes propose a variant in which all add instructions are replaced with corresponding subtract instructions that take the same amount of time. The idea is apparently to dazzle the press with a “less is more” approach. Calculate the CPI of variant 1:}
+    
+    This will result in the same CPI as above.
+    \begin{equation*}
+        CPI_{A371-B} = 0.05 * 3 + 0.1 * 5 + 0.1 * 8 + 0.5 * 2 + 0.15 * 5 + 0.1 * 1
+    \end{equation*}
+    \begin{equation*}
+        CPI_{A371-B} = 0.15 + 0.5 + 0.8 + 1 + 0.75 + 0.1 = 3.30
+    \end{equation*}
+    
+    \ 
+    
+    \textit{(c) Variant 2: Alternatively, remove the highest-latency instruction, and replace all those instructions with (on average), three of the lowest latency instructions in the mix. Calculate the CPI of variant 2 (relative to the original instruction count):}
+    
+    \begin{equation*}
+        CPI_{A371-C} = (CPI_{A371} - 0.8) + 3 * 0.1 = 2.80
+    \end{equation*}
+    \begin{equation*}
+        CPI_{A371-C} = (3.30 - 0.8) + 3 * 0.1 = 2.80
+    \end{equation*}
+    
+    \ 
+    
+    \textit{(d) Variant 3: Cut the latency for divides by a factor of four, but increase the latencies of branches by 50\%. Calculate the CPI of variant 3:}
+    
+    \begin{equation*}
+        CPI_{A371-B} = 0.05 * 3 + 0.1 * 5 + \frac{0.1 * 8}{4} + (0.5 * 2)*1.5 + 0.15 * 5 + 0.1 * 1
+    \end{equation*}
+    
+    \begin{equation*}
+        CPI_{A371-B} = 3.20
+    \end{equation*}
+    
+    \end{answered}
+
+\end{QandA}
+
+\subsection{Fall 2017 : CIS501}
+
+\begin{QandA}
+   \item Assume a typical program has the following instruction type breakdown:
+   
+    25\% loads | 20\% stores | 50\% adds | 5\% multiplies
+
+    Assume the current-generation processor has the following instruction latencies:
+    
+    loads: 2 cycles | stores: 5 cycles | adds: 1 cycle | multiplies: 25 cycles
+
+    \begin{answered}
+    
+    \textit{(a) What is the CPI of the current-generation processor on the typical program?}
+    
+    \begin{equation*}
+        CPI_{typical} = 0.25 * 2 + 0.20 * 5 + 0.50 * 1 + 0.05 * 25
+    \end{equation*}
+    \begin{equation*}
+        CPI_{typical} = 0.50 + 1.00 + 0.50 + 1.25
+    \end{equation*}    
+    
+    \ 
+    
+    \textit{(b) If for the next-generation processor you could pick one type of instruction to
+make twice as fast (half the latency), which instruction type would you pick?}
+
+    \textbf{Answer:} Multiply operations (1.25), this will then reduce the overall $CPI$ to $3.25 - 0.625$ = $2.625$ 
+    \end{answered}
+    
+    \item A software developer is trying to optimize the performance of her code. She finds that it spends 33\% of its time in a function foo(). After further experimentation, she estimates that this function can be accelerated by 4x with the use of vector insns. What is the overall application speedup that can be achieved if foo() is optimized?
+    
+    \begin{equation*}
+    Speedup = \frac{1}{(1-P)+\frac{P}{N}}    
+    \end{equation*}
+    \begin{equation*}
+    Speedup = \frac{1}{(1-0.33)+\frac{0.33}{4}} = \frac{1}{0.66+0.0825} = 1.346\times
+    \end{equation*}
+    
+    \item A processor architect is trying to measure the average occupancy of a 5-stage pipeline (how many insns are in the pipeline, on average). He measures the average arrival rate of insns to be 667 MHz, and the average time spent in the pipeline to be 6 ns. What is the average occupancy of the pipeline?
+    
+    \begin{equation*}
+        L = \lambda \times W
+    \end{equation*}
+    \begin{equation*}
+        L = 667 MHz \times 6ns = 667 * 10^{6} * 6 * 10^{-9}
+    \end{equation*}
+    \begin{equation*}
+        L = 4002 * 10^{-3} = 4\ instructions
+    \end{equation*}
+\end{QandA}
+
+\subsection{Spring 2018 : CIS371}
+
+\begin{QandA}
+   \item Assume a typical program has the following instruction type breakdown:
+   
+    20\% loads | 20\% stores | 50\% adds | 10\% multiplies
+
+    Assume the current-generation processor has the following instruction latencies:
+    
+    loads: 2 cycles | stores: 9 cycles | adds: 1 cycle | multiplies: 15 cycles
+
+    \begin{answered}
+    
+    \textit{(a) What is the CPI of the current-generation processor on the typical program?}
+    
+    \begin{equation*}
+        CPI_{typical} = 0.20 * 2 + 0.20 * 9 + 0.50 * 1 + 0.10 * 15
+    \end{equation*}
+    \begin{equation*}
+        CPI_{typical} = 0.40 + 1.80 + 0.50 + 1.50 = 4.20
+    \end{equation*}
+    
+    \textit{(b) If for the next-generation processor you could pick one type of instruction to make twice as fast (half the latency), which instruction type would you pick?}
+    
+    \textbf{Answer:} Stores
+    \end{answered}
+    
+    \item Tara Hertz, PhD is trying to optimize the performance of her code. She finds that it spends 25\% of its time in a function foo(). After further experimentation, she estimates that this function can be accelerated by 5x with the use of vector insns. What is the overall application speedup that can be achieved if foo() is optimized?
+    
+    \begin{answered}
+    \begin{equation*}
+    Speedup = \frac{1}{(1-P)+\frac{P}{N}}    
+    \end{equation*}
+    \begin{equation*}
+    Speedup = \frac{1}{(1-0.25)+\frac{0.25}{5}} = \frac{1}{0.75+0.05} = 1.25\times
+    \end{equation*}
+    \end{answered}
+
+\end{QandA}
+
+\subsection{Spring 2019 : CIS501}
+
+\begin{QandA}
+   \item What is the maximum IPC obtainable by our single-cycle design (Lab 3)?
+        \begin{answered}
+        \textit{Answer:} 1
+        \end{answered}
+        
+    \
+        
+    \item Tara Hertz, PhD is trying to optimize the performance of her code. She finds that it spends 30\% of its time in a function foo(). After further experimentation, she estimates that this function can be accelerated by 3x with the use of an FPGA. What is the overall application speedup that can be achieved if foo() is optimized?
+        \begin{answered}
+        \begin{equation*}
+        Speedup = \frac{1}{(1-P)+\frac{P}{N}}    
+        \end{equation*}
+        \begin{equation*}
+        Speedup = \frac{1}{(1-0.30)+\frac{0.30}{3}} = \frac{1}{0.7+0.10} = 1.25\times
+        \end{equation*}
+        \end{answered}
+        
+    \item A web server receives and processes 100 requests per second, and is processing 50 requests at any given time. Assume the system is in a steady state.
+    
+    \begin{answered}
+    \begin{equation*}
+        L = \lambda \times W
+    \end{equation*}
+    \begin{equation*}
+        W = \frac{L}{\lambda} = \frac{50\ requests}{100\ requests\ per\ second}
+    \end{equation*}
+    \begin{equation*}
+        W = 0.5\ seconds
+    \end{equation*}
+    
+    \ 
+    
+    \textit{(b) The IT department wants to cut client waiting time in half. It is considering buying more RAM for the web server so that it can hold 100 requests at any given time. Will this meet their performance objective?}
+    
+    \textit{Answer:} No, this will not help as the system is already in steady state. It is not limited by storage space or insufficient buffer size. The only way to improve this will be to increases the rate at which requests are processed, i.e increase $\lambda$.
+    
+    
+    \end{answered}
+    
+    
 \end{QandA}
 
 \end{document}
