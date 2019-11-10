@@ -1,0 +1,155 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\alph*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Pipelining}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+   \item What are we trying to improve by introducing this optimization (pipelining)?
+        \begin{answered}
+        Throughput. In the \textit{laundry example}, pipelining will only enhance performance if you have more than one load of clothes to clean.
+        \end{answered}
+        
+    \item If you have 3 stages - washer, dryer and "folding robot"? How long does one load of laundry take? How long does two loads of laundry take? How long would 100 loads take?
+        \begin{answered}
+            $1$ load of laundry will take $3$ units of time. $2$ loads of laundry will take $4$ units of time. $100$ loads of laundry will take $104$ units of time. 
+            
+            To understand why $100$ loads of laundry will take $104$ units of time, understand why $3$ loads of laundry will take $5$ loads of time. \textit{Intuition:} The case(s) when the number of loads of laundry is $\geq$ the number of pipeline stages.
+        \end{answered}
+        
+    \item What is the processor performance equation?
+    \begin{answered}
+    \begin{equation*}
+        Execution\ Time = \frac{Seconds}{Program} = \frac{I \times S \times C}{P \times C \times I}
+    \end{equation*}
+    \begin{equation*}
+        Execution\ Time = \frac{Instructions}{Program} \times \frac{Seconds}{Cycle} \times \frac{Cycles}{Instruction}
+    \end{equation*}
+    
+    For \textit{performance optimization}, we want to ideally minimize all three of the above terms, but sometimes they will pull against each other.
+    
+    Here $\frac{Instruction}{Program}$ refers to the \textbf{Dynamic Instruction Count}. It is the instructions that the processor will actually run during the course of a program and not just the static instructions (eg: loops).
+    \end{answered}
+    
+    \item Briefly discuss the performance of a Single-Cycle Datapath and mention it's limitations?
+    \begin{answered}
+    Everything is done within a single clock cycle. This means that the clock cycle is chosen to be the worst-case delay through the circuit - \textit{critical path}. Therefore, performance is limited by the slowest instruction always.
+    \end{answered}
+        
+    \item What are the different stages in the pipelined LC4 datapath?
+    \begin{answered}
+    There are five different stages in the LC4 datapath, called the \textbf{pipeline depth}, with one instruction in each stage in each cycle:
+    \begin{itemize}
+        \item Fetch (\textbf{F}) : 
+        \item Decode (\textbf{D})
+        \item Execute (\textbf{X})
+        \item Memory (\textbf{M})
+        \item Writeback (\textbf{W})
+    \end{itemize}
+    \end{answered}
+    
+    \item How is the clock period selected for this pipelined datapath?
+    \begin{answered}
+    \begin{equation*}
+        Clock\ Period\ =\ MAX(T_{F}, T_{D}, T_{X}, T_{M}, T_{W})
+    \end{equation*}    
+    \end{answered}
+    
+    \item What is the CPI of the pipelined architecutre?
+    \begin{answered}
+    The base CPI is $1$ because instructions enter and leave every cycle, but the actual CPI $\geq$ 1 since the pipeline might \textit{stall}. The individual instruction \textbf{latency} will actually \textbf{increase} due to the overhead of the pipelining process, but the benefits of additional throughput make it worth sacrificing latency for.
+    \end{answered}
+    
+    \item How are the different stages arranged?
+    \begin{answered}
+    The different stages are delimited by the \textit{pipeline registers}, which are named by the stages they begin at.
+    \begin{itemize}
+        \item PC Register \textbf{(PC)} \textit{(Fetch)}
+        \item Decode Register \textbf{(D)}
+        \item Execute Register \textbf{(X)}
+        \item Memory Register \textbf{(M)}
+        \item Writeback Register \textbf{(W)}
+    \end{itemize}
+    \end{answered}
+    
+    \item Pipeline Example:
+    \begin{answered}
+    Let's look at the following example of three instructions:
+    \begin{enumerate}
+        \item ADD R1, R2, R3 , \textit{where R3 is the destination register}
+        \item LOAD 8(R5), R4, \textit{where R4 is the destination register}
+        \item STORE R4, 8(R5), \textit{R5+8 is the destination memory address}
+    \end{enumerate}
+    
+    \textbf{Cycle 1:} 
+    
+    In the first cycle, we do not yet know that the instruction entering the pipeline is an ADD instruction. This instruction enters the \textit{Fetch Stage} and we identify the address of the next instruction (in \textit{instruction memory}) using the \textbf{Program Counter (PC)}. We then go get those bits from the instruction memory.
+    
+    \textbf{Cycle 2:} 
+    
+    In the second cycle, the ADD instruction enters the \textit{Decode Stage} and proceeds to read from the \textit{Register File} to get the input values (R1 and R2). The decoding process parses the input instruction to establish all the control signals required for this instruction in the proceeding stages.
+    
+    \quad In this same cycle, the next instruction (LOAD) is in the \textit{Fetch} stage, doing what the ADD instruction did in the previous cycle.
+    
+    \textbf{Cycle 3:} 
+    
+    In the third cycle, the ADD instruction enters the \textit{Execute Stage} and proceeds to use the \textbf{ALU} to execute an ADD operation on the two operands. 
+    
+    \quad In this same cycle, the LOAD instruction enters the \textit{Decode Stage} and the next instruction (STORE) enters the \textit{Fetch Stage}.
+    
+    \textbf{Cycle 4:}
+    
+    In the fourth cycle, the ADD instruction goes through the \textit{Memory Stage} even though there's nothing for it to do there. It needs to write the resulting value to register R3, which it will do in the next step. Can be thought of as a \textbf{NO-OP} stage for the ADD instruction.
+    
+    \quad The other two instructions proceed down the pipeline to \textit{Execute Stage} and \textit{Decode Stage} respectively.
+    
+    \textbf{Cycle 5:}
+    
+    In the fifth cycle, the ADD instruction enters the \textit{Writeback Stage}, and then performs a write-back of the ALU result to the \textit{Register File}, selecting the correct destination register.
+    
+    \quad The other two instructions proceed down the pipeline to \textit{Memory Stage} and \textit{Execute Stage} respectively. 
+    
+    \textbf{Cycle 6 \& Cycle 7:}
+    
+    LOAD and STORE pass through the last two stages of the pipeline over the these two cycles.
+    
+    \end{answered}
+    
+    \item Pipeline Performance:
+    \begin{answered}
+    In a single-cycle design, if the clock period is \textbf{50ns} and CPI = 1, then your effective performance is \textbf{50ns/insn}.
+    
+    In the 5-stage pipeline above, you could naively say the performance is now $\frac{50ns}{5}$ = \textbf{10ns}, but this is not the case for the following reasons:
+    \begin{itemize}
+        \item Not all stages are uniform in the amount of time they will take.
+        \item Pipeline registers add delay to the system
+        \item There are more datapaths in pipelined sytems (bypasses)
+    \end{itemize}
+    
+    Therefore longer (deeper) pipelines show diminishing clock frequency gains. However, in our example, we can assume that our clock period = \textbf{10ns} + overheads = \textbf{12ns}. And let's say that our CPI = 1 + pipeline penalty = \textbf{1.5}. Our effective performance will then be \textbf{12ns $\times$ 1.5 = 18ns/insn}.
+    \end{answered}
+
+
+\end{QandA}
+
+\end{document}
+
