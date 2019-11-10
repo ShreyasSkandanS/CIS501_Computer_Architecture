@@ -95,9 +95,9 @@
     \begin{answered}
     Let's look at the following example of three instructions:
     \begin{enumerate}
-        \item ADD R1, R2, R3 , \textit{where R3 is the destination register}
-        \item LOAD 8(R5), R4, \textit{where R4 is the destination register}
-        \item STORE R4, 8(R5), \textit{R5+8 is the destination memory address}
+        \item ADD R1, R2, R3 : \textit{where R3 is the destination register}
+        \item LOAD 8(R5), R4 : \textit{where R4 is the destination register}
+        \item STORE R6, 4(R7) : \textit{where R7+4 is the destination memory address}
     \end{enumerate}
     
     \textbf{Cycle 1:} 
@@ -146,6 +146,121 @@
     \end{itemize}
     
     Therefore longer (deeper) pipelines show diminishing clock frequency gains. However, in our example, we can assume that our clock period = \textbf{10ns} + overheads = \textbf{12ns}. And let's say that our CPI = 1 + pipeline penalty = \textbf{1.5}. Our effective performance will then be \textbf{12ns $\times$ 1.5 = 18ns/insn}.
+    \end{answered}
+    
+    \item Dependencies and Hazards
+    \begin{answered}
+    A key challenge in pipelining is the identification and handling of dependencies across multiple different instructions.
+    
+    \textbf{Dependence:} It is a relationship between any two instructions.
+    
+    \begin{itemize}
+        \item Data Dependence: If two instructions use the same storage locations (i.e either the same memory address or register)
+        \item Control Dependence: One instruction affects whether another instruction executes at all (i.e such as in a branch instruction)
+    \end{itemize}
+    
+    \textbf{Hazard:} A hazard is a result of the existence of a dependence leading to the possibility of wrong instruction order. The effects of a hazard should not be externally visible. \textbf{Stalls} are used to maintain this order by holding a younger instruction in the same stage and propagating an empty instruction (\textbf{no-op}) instead. Hazards are undesirable because the stalls that are introduce result in reduction in performance.
+    \end{answered}
+    
+    \item Data Hazards
+    \begin{answered}
+    Ignoring \textit{control hazards} for now, let us look at Data Hazards, i.e when two instructions use the same storage locations (memory or register). 
+    
+    \textit{Example 1:}
+    \begin{enumerate}
+        \item ADD R1, R2 $\rightarrow$ \textbf{R3}
+        \item ADD \textbf{R3}, R5 $\rightarrow$ R6
+    \end{enumerate}
+    
+    \textit{Example 2:}
+    \begin{enumerate}
+        \item ADD R1, R2 $\rightarrow$ \textbf{R3}
+        \item LOAD 8(\textbf{R3}) $\rightarrow$ R4
+        \item ADDI 1, \textbf{R3} $\rightarrow$ R6
+        \item STORE 8, R7 $\rightarrow$ \textbf{R3}
+    \end{enumerate}
+    
+    At \textbf{Cycle 4} of this example, ADD is writing it's result to R3. LOAD has already read R3 two cycles ago, which means that the value that it currently has is outdated! ADDI also read R3 one cycle ago which means that it's value is outdated too. STORE is currently in the process of reading R3 but it is unclear whether it has the updated value of R3 or not depending on how the \textit{Register File} was implemented (i.e Read-after-Write or Write-after-Read).
+    
+    \end{answered}
+
+    \item What are some initial ways we can try fix this problem?
+    \begin{answered}
+    We can fix this problem in two ways:
+    \begin{enumerate}
+        \item \textbf{Software Interlocks:} 
+        
+        The compiler will identify and put two independent instructions between the two instructions that have a dependence. If no independent instructions exist to re-order between them, a \textit{no-op} is placed.
+        
+        \begin{itemize}
+            \item For software interlocks, the CPI is still technically 1 but there are now more instructions. For \textit{example}: 20\% of instructions require the insertion of 1 \textbf{no-op}. 5\% of instructions require the insertion of 2 \textbf{no-ops}.
+            \item The total number of instructions then goes up to $1 + 0.20 \times 1 + 0.05 \times 2$ = 1.3 resulting in a 30\% slowdown.
+            \item Another problem with software interlocks is the dependence on specific architecture design. These optimizations are pipeline dependent and make it difficult to ensure backward compatibility (e.g if you were to move towards a 7-stage pipeline, this would not work anymore).
+        \end{itemize}
+        
+        \item \textbf{Hardware Interlocks:}
+        
+        Here, the processor detects the data hazards and fixes them. We are not concerned anymore with compatibility issues.
+        
+        We can \textit{detect data hazards} by comparing the input register names of the instruction in the \textbf{Decode Stage} with output register names of instructions in the \textbf{Execute Stage} and the \textbf{Memory Stage}.
+        
+        \begin{equation*}
+        \begin{split}
+        stall = &\ (Decode.IR.src1 == Execute.IR.dest)\ ||\\ &\ (Decode.IR.src2 == Execute.IR.dest)\ ||\\ &\ (Decode.IR.src1 == Memory.IR.dest)\ ||\\ &\ (Decode.IR.src2 == Memory.IR.dest)
+        \end{split}
+        \end{equation*}
+        
+        If any of these conditions hold \textit{True}, then insert a \textbf{no-op} into the pipeline at the next stage. This maneuver is called a \textbf{stall} or a \textbf{bubble}. 
+        
+        For hardware interlocks, the CPI can be calculated as above. Here 20\% of instructions require 1 cycle stall and 5\% of instructions require a 2\% cycle stall. The effective CPI is still the same as with \textit{software interlocks}, except here the instructions stay at 1 and the CPI increases by 30\%.
+
+    \end{enumerate}
+    \end{answered}
+    
+    \item Bypassing
+    \begin{answered}
+    For \textit{example}: say we had an instruction [ADD R1, R2 $\rightarrow$ R3] in the \textit{Memory Stage} and an instruction [LOAD 8(R3) $\rightarrow$ R4] in the \textit{Execute Stage}. Since the LOAD instruction is already in the Execute Stage, this tells us that the current value of R3 that the LOAD instruction has is outdated, since the ADD instruction is just about to update it's value. However, at this very moment, nothing catastrophic has happened yet, even though we know it will in the next cycle if left unchecked. 
+    
+    \textbf{1. MX Bypass:}
+    
+    \textit{What if we were to pass the updated value of R3 from the Memory Stage back to the Execute Stage, so that the LOAD instruction can now possess the latest value for R3?}
+    
+    This is called \textbf{Bypassing} or \textbf{Forwarding} and this specific case of forwarding information from the \textit{Memory Stage} to the \textit{Execute Stage} is called \textbf{MX Bypassing}.
+    
+    There is indeed an additional hardware overhead of performing a bypass operation since we need extra wires and a multiplexer. But these overheads are negligible in terms of the performance gained. Instead of filling that cycle with a \textit{no-op} we were able to make progress at the cost of minimum hardware latency. 
+    
+    \textbf{2. WX Bypass:}
+    
+    Similarly, if such a dependence exists across the \textit{Write-back Stage} and the \textit{Execute Stage}, we can perform the same operation and forward this value to the \textit{Execute Stage} with an additional wire and Mux. 
+    
+    \begin{itemize}
+        \item \textit{Which ALU input in the Execute Stage can you bypass to?} You can add similar wires and multiplexers and make bypass operations available to both inputs of the ALU. Both \textbf{ALUinA} and \textbf{ALUinB} bypassing is possible. 
+    \end{itemize}
+    
+    \textbf{3. WM Bypass:}
+    
+    Another bypassing technique, although helpful in limited circumstances, is WM Bypass. For \textit{example} if you have instructions [LOAD 8(R2) $\rightarrow$ R3] and [STORE R3 $\rightarrow$ 4(R4)]. When the LOAD instruction is in the \textit{Write-back Stage} it writes the updated value of register R3 back to the Register File. However, the STORE instruction needs to write the value from register R3 to memory address $4(R4)$. Currently, the STORE instruction contains an outdated value of R3 and hence a bypass from the \textit{Write-back Stage} to the \textit{Memory Stage} makes sense.
+    
+    However, let us look at an \textbf{important contradicting example}:
+    \begin{enumerate}
+        \item LOAD 8(R2) $\rightarrow$ R3
+        \item STORE R4 $\rightarrow$ 4(R3)
+    \end{enumerate}
+    This will not work, because when the LOAD instruction is in the \textit{Write-back Stage}, and the STORE is in the \textit{Memory Stage}, the STORE instruction would have already calculated the address in the \textit{Execute Stage} and hence cannot recalculate the address with the updated value of R3 here. In this case, WM Bypassing will not work.
+    \end{answered}
+    
+    \item Bypass Logic
+    \begin{answered}
+        \begin{equation*}
+        \begin{split}
+        ALUinA_{MUX} : &\ if\ (Execute.IR.src1 == Memory.IR.dest)\ \implies 0\\ &\ if\ (Execute.IR.src1 == Writeback.IR.dest)\ \implies 1\\ &\ else\ \implies 2
+        \end{split}
+        \end{equation*}
+        \begin{equation*}
+        \begin{split}
+        ALUinB_{MUX} : &\ if\ (Execute.IR.src2 == Memory.IR.dest)\ \implies 0\\ &\ if\ (Execute.IR.src2 == Writeback.IR.dest)\ \implies 1\\ &\ else\ \implies 2
+        \end{split}
+        \end{equation*}        
     \end{answered}
 
 
