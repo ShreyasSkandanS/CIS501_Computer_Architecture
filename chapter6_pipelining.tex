@@ -332,6 +332,79 @@
             \item All instructions travel through all stages of the circuit
         \end{itemize}
     \end{answered}
+    
+    \item Structural Hazards and Multiple-Cycle Operations
+    \begin{answered}
+    Another example of a \textbf{Structural Hazard} occurring is when we have operations that don't follow the assumption that all instructions are going to go through all the different stages of the pipeline. 
+    
+    \textbf{Multi-cycle Multiply:}
+    
+    For \textit{example:} If you have a multiply instruction, it is a high latency operation - \textit{Execute Stage} gets really large because of this. We can then put it through it's own separate pipeline. We can then run the original part of the pipeline faster, but multiply operations will take 4 clock cycles. It has it's own register and lives as it's own unit. We can also make it skip the \textit{Memory Stage} and go straight to the \textit{Write-back Stage}.
+    
+    Let's look at some of the implications of this approach:
+    
+    \textbf{Case 1:} \textit{What happens during a regular data dependence condition?}
+    
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     MUL R3, R5 $\rightarrow$ R4 & F & D & P0 & P1 & P2 & P3 & \textbf{W}$\downarrow$ & - & -\\ 
+     ADDI R4, 1 $\rightarrow$ R6 & - & F & D & $d^{*}$ & $d^{*}$ & $d^{*}$ & \textbf{X } & M & W \\ 
+     \hline
+    \end{tabular}
+    \end{center} 
+    
+    A sequence of instructions such as the one above will result in 3 stalls!
+    
+    The stall logic to identify this condition is:
+    \begin{equation*}
+    \begin{split}
+    Stall & = (PreviousStallLogic)|| \\ & (Decode.IR.src1 == PO.IR.dest)||  (Decode.IR.src2 == PO.IR.dest)|| \\ & (Decode.IR.src1 == P1.IR.dest)|| 
+    (Decode.IR.src2 == P1.IR.dest)|| \\ & (Decode.IR.src1 == P2.IR.dest)|| 
+    (Decode.IR.src2 == P2.IR.dest)
+    \end{split}
+    \end{equation*}    
+    
+    \textbf{Case 2:} \textit{What if two instructions are trying to write to the register file in the same cycle?}
+    \begin{equation*}
+    \begin{split}
+    Stall & = (PreviousStallLogic)\ || \\ &\ \ \ \ (Decode.IR.dest == "valid")\ \&\& \\  &\ \ \ \ (Decode.IR.operation \neq MULT)\ \&\& \\ &\ \ \ \  (P1.IR.dest == "valid")
+    \end{split}
+    \end{equation*}  
+    
+    Here, being \textit{valid} indicates that it is indeed writing to a register since not all instructions must write to a register. You could also avoid this problem by introducing an additional write port, but that requires additional hardware and comes with it's own additional overhead and latency.
+    
+    \textbf{Case 3:} \textit{Since multiplies take 4 cycles to complete, what if the cycle that comes after it finishes before it?}
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     MUL R3, R5 $\rightarrow$ R4 & F & D & P0 & P1 & P2 & P3 & \textbf{W} & - & -\\ 
+     ADDI R1, 1 $\rightarrow$ R4 & - & F & D & X & M & \textbf{W} & - & - & - \\ 
+     ... & - & - & - & - & - & - & - & - & - \\
+     ... & - & - & - & - & - & - & - & - & - \\
+     ADD R4, R6 $\rightarrow$ R8 & - & - & - & - & F & D & X & M & W \\ 
+     \hline
+    \end{tabular}
+    \end{center} 
+    
+    The value of $R4$ that the ADD instruction will recieve is most likely to be incorrect because of the mis-ordering.
+    
+    We can identify this condition as follows:
+    \begin{equation*}
+    \begin{split}
+    Stall & = (PreviousStallLogic)\ || \\ &\ \ \ \ ((Decode.IR.dest == P0.IR.dest)\ || \\  &\ \ \ \ \ (Decode.IR.dest == P1.IR.dest))\ 
+    \end{split}
+    \end{equation*} 
+    
+    \textbf{Summary:} 
+    
+    Multi-cycle operations complicate pipeline logic, but there are definite performance gains to be had. It is an \textit{area-efficient} way to add throughput. However, in some cases such as in int/FP divide, it's difficult to do and may just not be worth it, in which case we should just accept the structural hazard and stall for a few cycles. 
+
+    \end{answered}
 
 \end{QandA}
 
