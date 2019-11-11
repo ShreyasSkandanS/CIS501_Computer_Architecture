@@ -262,7 +262,76 @@
         \end{split}
         \end{equation*}        
     \end{answered}
+    
+    \item Bypass example:
+    \begin{answered}
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ 
+     \hline
+     ADD R2, R3 $\rightarrow$ R1 & F & D & X & M & \textbf{W}$\downarrow$ & - & - & - \\ 
+     \textit{What goes here?} & - & F & D & X & \textbf{M } & W & - & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}
+    First, for a \textbf{WM Bypass} to occur, we know that the instruction after the ADD instruction must have a dependence on register R1. 
+    
+    Second, this instruction cannot be writing to an address that depends on register R1. For \textit{example} the instruction [STORE R5 $\rightarrow$ 7(R1)] is not possible.
+    
+    With this in mind, a suitable instruction could be [\textbf{STORE R1 $\rightarrow$ 8(R5)}].
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ 
+     \hline
+     ADD R2, R3 $\rightarrow$ R1 & F & D & X & M & \textbf{W}$\downarrow$ & - & - & - \\ 
+     STORE R1 $\rightarrow$ 7(R5) & - & F & D & X & \textbf{M } & W & - & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}    
+    \end{answered}
+    
+    \item Load-to-Use Dependency
+    \begin{answered}
+    Have we prevented all possible data hazards with the above 3 bypassing techniques? \textbf{No}. The load-to-use case is an example where bypassing just doesn't cut it and we have to use a \textbf{Stall}.
+    
+    For \textit{example:} consider the following instructions:
+    \begin{enumerate}
+        \item LOAD 8(R2) $\rightarrow$ R3
+        \item ADD R2, R3 $\rightarrow$ R4
+    \end{enumerate}
+    When the LOAD instruction is in the \textit{Memory Stage} and the ADD instruction is in the \textit{Execute Stage}, the LOAD instruction cannot forward the updated value of R3 yet since it hasn't accessed the \textit{Data Memory} yet to perform the address calculation. 
+    
+    We need to therefore \textbf{identify} this situation early on and prevent the ADD instruction from advancing beyond the \textit{Decode Stage} by inserting a \textbf{stall/bubble} into the \textit{Execute Stage}.
+    
+    This condition can be identified as follows:
+    \begin{equation*}
+    \begin{split}
+    Stall = &\ (Execute.IR.operation == LOAD)\ \&\& \\ &\ (\ (Decode.IR.src1 == Execute.IR.dest)\ || \\ &\ \ \ ((Decode.IR.src2 == Execute.IR.dest) \&\& \\ &\ \ \ \ (Decode.IR.op != STORE)) \\ &)
+    \end{split}
+    \end{equation*}     
+    
+    Once this condition is detected as above, a stall or bubble can be inserted. In the following cycle, a regular \textbf{WX Bypass} can be used.
+    
+    \textit{Performance:} Assuming that 50\% of loads are followed by dependent instructions (load-to-use), then this will require 1 stall cycle (an insertion of a no-op).
+    
+    The resulting performance will then be CPI = 1 + (1 $\times$ 0.20 $\times$ 0.50).
+    
+    We can also include additional optimization by re-arranging instructions as seen with \textit{software interlocks}, but this time we do it for performance and not for correctness. 
+    \end{answered}
 
+    \item Structural Hazards:
+    \begin{answered}
+        A structural hazard is when two instructions are trying to use a piece of the circuit at the exact same time. For \textit{example:} two instructions trying to use a write port at the same time. 
+        
+        This can be avoided under the following conditions:
+        \begin{itemize}
+            \item Each instruction uses every structure in the circuit exactly once
+            \item Each instruction does this for at most one cycle
+            \item All instructions travel through all stages of the circuit
+        \end{itemize}
+    \end{answered}
 
 \end{QandA}
 
