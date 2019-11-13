@@ -1,0 +1,92 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\alph*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Branch Prediction}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+\item Control Dependencies
+\begin{answered}
+    We haven't talked about \textbf{control hazards} yet, i.e when we have some control flow instruction coming through the pipeline that dictates what instruction should follow it. It can be thought of as a dependency through the \textbf{Program Counter (PC)} since the \textbf{PC} dictates the order of instruction flow. 
+    
+    \qquad\textbf{Branch Prediction} is how we will attempt to solve this problem. Branch Prediction cannot however fix all cases of failure related to control hazards. 
+\end{answered}
+
+\item What are the challenges with Branch instructions?
+\vspace{-0.85cm}
+\begin{answered}
+\begin{itemize}
+    \item First, when an instruction is coming down the pipeline, we first need to figure out whether it is a \textbf{BR} instruction or not. This doesn't happen during the \textit{Fetch Stage} but happens during the \textit{Decode Stage}.
+    
+    \item Second, we need to figure out which way the \textbf{BR} instruction should go, i.e should the processor move to the next sequential instruction or should it jump to the \textit{target}. This usually involves some computation to figure out what the \textit{target} address is, and thus involves the \textbf{ALU}. So this starts to illustrate that some of the information that we need is computed later into the pipeline.
+    
+    This gap between \textit{when I need the information} and \textit{when I have it} is the primary problem here and indicates that there will probably be some \textbf{stalling} involved.
+    
+    \item Lastly, building upon the first challenge - when the processor is handling a Branch instruction, it is usually Fetched and then moves onto the \textit{Decode Stage}. But what should we be doing in the \textit{Fetch Stage} next? Logically, we will have to fetch the next instruction in the sequence. But if the previous instruction was indeed a \textbf{Branch} instruction, we should be going to the \textit{target} in the next cycle instead of the next sequential instruction. This is another fundamental problem in handling \textbf{Branch} instructions. \textit{We don't yet know what the right thing to do is, but we have to do something!}. We can \textit{not do anything} but that would then indicate a 3 cycle stall/gap, which isn't good for performance.
+\end{itemize}
+\end{answered}
+
+\item How do we then fix this problem?
+\begin{answered}
+    We can just \textbf{guess}. In our previous approach of handling \textit{data hazards}, we would try to identify a problem early on and make arrangements to avoid that problem or minimize it's effects on the system. However, with \textit{control hazards}, we take a different approach because \textbf{waiting/stalling} is too expensive. We instead \textbf{guess}, and hope to make a \textbf{smart guess}. This does not guarantee that we are always correct, so when we are wrong we must ensure there are mechanisms in place to clean up behind us. This is the idea behind \textbf{Speculative Execution}.
+\end{answered}
+
+\item Speculative Execution
+\vspace{-0.85cm}
+\begin{answered}
+\begin{itemize}
+    \item Execute before all parameters are known with certainty
+    \item If your speculation is \textit{correct}, you have avoided stalls and improved performance significantly
+    \item If your speculation is \textit{incorrect} (mis-speculation), you have to fix what you broke by flushing all incorrect instructions and undo all incorrect changes, going back to the original state
+\end{itemize}
+\end{answered}
+
+\item Control Speculation
+\begin{answered}
+    This is the first type of speculation we will introduce. When you have a control flow instruction, you don't know where it is going, so the speculation is made on the control flow path. 
+    \begin{itemize}
+        \item We want to guess whether it is a \textbf{Branch Instruction} to begin with.
+        \item If it is a \textit{Branch Instruction}, we want to guess whether it is \textbf{taken}.
+        \item If it is \textit{taken}, we want to guess what it's \textbf{target} is.
+    \end{itemize}
+    This ultimately results in guessing \textit{where should I go next} or more simply \textit{what is the next \textbf{PC} that I should be going to?}
+    
+    According to this, what we've been doing so far is also technically \textit{speculation}, except we guessed that the next \textbf{PC} would always be \textbf{PC + 4}.
+\end{answered}
+
+\item At what stage should we perform Branch Prediction?
+\begin{answered}
+    Ideally, the later we do it, the more accurate our prediction will be since we will have more and more information available to us as we go down the pipeline. But this is not necessarily good for performance since it will ensure that some cycles are lost in case the branch was actually taken.
+    
+    
+\end{answered}
+
+\end{QandA}
+
+\newpage 
+
+\section{Textbook Notes}
+\begin{QandA}
+\item 
+\end{QandA}
+
+\end{document}

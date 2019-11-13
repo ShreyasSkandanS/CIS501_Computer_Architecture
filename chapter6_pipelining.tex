@@ -106,7 +106,7 @@
     
     \textbf{Cycle 2:} 
     
-    In the second cycle, the ADD instruction enters the \textit{Decode Stage} and proceeds to read from the \textit{Register File} to get the input values (R1 and R2). The decoding process parses the input instruction to establish all the control signals required for this instruction in the proceeding stages.
+    In the second cycle, the ADD instruction enters the \textit{Decode Stage} and proceeds to decode the instruction and read from the \textit{Register File} to get the input values (R1 and R2). The decoding process parses the input instruction to establish all the control signals required for this instruction in the proceeding stages.
     
     \quad In this same cycle, the next instruction (LOAD) is in the \textit{Fetch} stage, doing what the ADD instruction did in the previous cycle.
     
@@ -403,9 +403,110 @@
     \textbf{Summary:} 
     
     Multi-cycle operations complicate pipeline logic, but there are definite performance gains to be had. It is an \textit{area-efficient} way to add throughput. However, in some cases such as in int/FP divide, it's difficult to do and may just not be worth it, in which case we should just accept the structural hazard and stall for a few cycles. 
-
     \end{answered}
+\end{QandA}
 
+\newpage 
+
+\section{Textbook Notes}
+\begin{QandA}
+   \item Pipelining Paradox:
+   \begin{answered}
+    The time from placing a single instruction into the pipeline till it's finished is \textbf{not} faster for pipelining. The reason pipelining \textbf{is faster} is because when many instructions go through the pipeline, instructions in different stages of the pipeline can work in parallel and more instructions can be finished in a given unit of time. \textit{Throughput} is what we improve, not \textit{latency}. But \textit{throughput} is important because computers execute billions of instructions!
+   \end{answered}
+   
+   \item Performance:
+   \begin{answered}
+   Under ideal conditions and with a large number of instructions, the speed-up from pipelining is approximately equal to the number of pipeline stages. For \textit{example} a five-stage pipeline is nearly five times faster. 
+   
+   There are however \textbf{start-up} and \textbf{wind-down} effects that lower performance when the number of tasks is not large compared to the number of stages. For \textit{example} a 5 stage pipeline with 2 instructions isn't a huge improvement in performance. 
+   
+   Additionally, dependence problems and stall cycles further reduce performance indicating that the speed-up is usually less than the number of pipeline stages.
+   \begin{equation*}
+       \text{speedup}_{pipeline} \leq \text{number of pipeline stage}
+   \end{equation*}
+      \begin{equation*}
+       \text{speedup}_{pipeline} = \text{\#stages} - (\text{start-up \& wind-down} + \text{dependencies})
+   \end{equation*}
+   \end{answered}
+   
+   \item Conditions that make pipelining easier?
+   \begin{answered}
+   \begin{enumerate}
+       \item LC4 instructions are all the same length
+       \item LC4 instructions have only a few unique formats
+       \item LC4 instructions have only LOAD and STORE memory instructions
+       \item LC4 instructions have operands aligned in memory (only one access required)
+   \end{enumerate}
+   \end{answered}
+   
+   \item Does bypassing solve all dependence problems?
+   \begin{answered}
+   No, sometimes we just have to take the \textit{stall} and move on. An \textit{example} is the \textbf{Load-to-Use} condition. 
+   \end{answered}
+   
+   \item What are the consequences of allowing JUMP, BRANCH and ALU instructions to take fewer stages than the five required?
+   \begin{answered}
+   This would create more problems than it's worth. Additionally, ALU instructions require to go through till the fifth stage since they write back to the destination register. Essentially, we should be looking to optimize our pipeline to require shorter cycles, even if that means splitting the pipeline into more stages.
+   \end{answered}
+   
+   \item What happens when a register is read and written in the same clock cycle?
+   \begin{answered}
+   One way to resolve this problem is to design the register file to enforce \textit{Read-after-Write (RAW)} which means that the write is performed in the first half of the clock cycle and read is in the second half of the clock cycle. 
+   
+   Alternatively, we could also have \textit{Write-after-Read (WAR)} and derive our correctness guarantees accordingly. 
+   \end{answered}
+   
+   \item Bypass all instructions all the time (!?)
+   \begin{answered}
+   Some instructions do not write registers, so attempting to add bypassing for all instructions isn't accurate. However, an easily fix for this problem is to check if the \textit{RegisterWrite} signal is \textbf{active} for that particular instruction and decide to bypass accordingly. 
+   \end{answered}
+   
+   \item MX Bypass
+   \begin{answered}
+   If the destination register of the instruction in the X$\rightarrow$\textbf{M} stage is the same register as any one of the source registers of the instruction in the D$\rightarrow$\textbf{X} stage, \textbf{and} if a \textit{RegisterWrite} signal is enabled, then a \textbf{MX Bypass} is required.  
+   
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     SUB R1, R3 $\rightarrow$ \textit{R2} & F & D & X & \textbf{M}$\downarrow$ & W & - & - & - & -\\ 
+     AND \textit{R2}, R5 $\rightarrow$ R12 & - & F & D & \textbf{X } & M & W & - & - & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}    
+   \end{answered}
+   
+   \item WX Bypass
+   \begin{answered}
+   If the destination register of the instruction in the M$\rightarrow$\textbf{W} stage is the same register as any one of the source registers of the instruction in the D$\rightarrow$\textbf{X} stage, \textbf{and} if a \textit{RegisterWrite} signal is enabled, then a \textbf{WX Bypass} is required.  
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     SUB R1, R3 $\rightarrow$ \textit{R2} & F & D & X & \textbf{M}$\downarrow$ & \textbf{W}$\downarrow$$\downarrow$ & - & - & - & -\\ 
+     AND \textit{R2}, R5 $\rightarrow$ R12 & - & F & D & \textbf{X  } & M & W & - & - & - \\ 
+     OR R6, \textit{R2} $\rightarrow$ R13 & - & - & F & D & \textbf{X  } & M & W & - & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}   
+   \end{answered}
+   
+   \item WM Bypass
+   \begin{answered}
+   This is a more specific bypass mechanism when you have a LOAD instruction immediately followed by a STORE instruction. This is usually seen in memory-to-memory copies. 
+   \end{answered}
+   
+   \item Load-to-Use 
+   \begin{answered}
+   There is a case where bypassing cannot save the day. This occurs when a load instruction is followed by an instruction that tries to read from the same register that the load instruction writes to.
+   
+   To detect this condition: check to see if the instruction is a load instruction and check if the destination register field of the load in the \textit{Execute Stage} matches either of the source registers in the \textit{Decode Stage}. Once this condition is detected, a \textbf{bubble} is inserted to stall the pipeline for one cycle. 
+   \end{answered}
+   
+   
 \end{QandA}
 
 \end{document}
