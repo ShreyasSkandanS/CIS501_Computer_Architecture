@@ -10,6 +10,8 @@
 \usepackage{authblk}
 \usepackage{indentfirst}
 \usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
 \newenvironment{QandA}{\begin{enumerate}[label=\bfseries\alph*.]\bfseries}
                       {\end{enumerate}}
 \newenvironment{answered}{\par\quad\normalfont}{}
@@ -77,7 +79,85 @@
 \begin{answered}
     Ideally, the later we do it, the more accurate our prediction will be since we will have more and more information available to us as we go down the pipeline. But this is not necessarily good for performance since it will ensure that some cycles are lost in case the branch was actually taken.
     
+    \textbf{1. During Decode:}
     
+    \textit{Pros:}
+    
+    If we do it after the decoding operation, we have a lot more information - we know if it is indeed a \textit{Branch Instruction} or a \textit{Jump Instruction} etc. This will help quite a bit for example if it is a \textit{Jump Instruction}, we know that it is always taken and we can update our PC accordingly. Even if it is a simple \textit{Add Instruction}, it is useful because then we don't need to make any exotic guesses and we can just update the PC to the next sequential address. 
+    
+    \textit{Cons:}
+    
+    Even at it's best, this will introduce a one cycle penalty. 
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     BNEZ R3, target & F & D & X & M & W & - & - & - & -\\ 
+     target: ADD R5, R4 $\rightarrow$ R4 & - & ? & F & D & X & M & W & - & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}   
+    
+    \textbf{2. During Fetch:}
+    
+    \textit{How would this work?}
+    
+    Realistically, we don't really know anything about the instruction during the \textit{Fetch Stage}. But we will design mechanisms that will make this possible.
+\end{answered}
+
+\item Branch Recovery
+\begin{answered}
+    How do we handle recovering from when a \textit{Branch Instruction} is actually \textbf{taken}, i.e we figured this out in the \textit{Execute Stage}? The instructions that are in the \textit{Fetch Stage} and the \textit{Decode Stage} are now \textbf{wrong}. These instructions need to be \textit{flushed}; this can be done by replacing them with \textbf{no-ops}. Not too much damage has been done since these instructions haven't written anything to permanent state elements (register files, memory) yet. The \textit{Program Counter} has however changed, but this is easier to fix. This exercise does introduce a \textbf{two cycle penalty} for any \textit{Branch Instruction} that is \textbf{taken}. 
+    
+    For \textit{example:} in \textbf{Lab 4} where we implement a Pipelined LC4 processor without \textit{Branch Instructions}, we always predict PC = PC + 1, but when this is wrong, we need to perform branch recovery and introduce the respective stall cycles. This is done by just adding a MUX that can switch between a \textit{no-op} signal and the regular instruction. 
+    
+    \textit{Speculation:}
+    
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     ADDI R1, 1 $\rightarrow$ R3 & F & D & X & M & W & - & - & - & -\\ 
+     BNEZ R3, targ & - & F & D & \textbf{\underline{X}} & M & W & - & - & - \\ 
+     STORE R6 $\rightarrow$ [R7, 4] & - & - & \textit{F} & \textit{D} & \textit{X} & \textit{M} & \textit{W} & - & - \\ 
+     MUL R8, R9 $\rightarrow$ R10 & - & - & - & \textit{F} & \textit{D} & \textit{X} & \textit{M} & \textit{W} & - \\ 
+     \hline
+    \end{tabular}
+    \end{center}       
+    
+    We realize where we are actually heading in \textit{Cycle 4}!
+    
+    \textit{Recovery:}
+    \begin{center}
+    \begin{tabular}{ |c|c|c|c|c|c|c|c|c|c| } 
+     \hline
+     Cycle & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ 
+     \hline
+     ADDI R1, 1 $\rightarrow$ R3 & F & D & X & M & W & - & - & - & -\\ 
+     BNEZ R3, targ & - & F & D & \textbf{\underline{X}} & M & W & - & - & - \\ 
+     \st{STORE R6 $\rightarrow$ [R7, 4]}& - & - & \textit{\st{F}} & \textit{\st{D}} & -- & -- & -- & - & - \\ 
+     \st{MUL R8, R9 $\rightarrow$ R10} & - & - & - & \textit{\st{F}} & -- & -- & -- & -- & - \\ targ: ADD R4, R5 $\rightarrow$ R4 & - & - & - & - & F & D & X & M & W \\
+     \hline
+    \end{tabular}
+    \end{center}       
+\end{answered}
+
+\item Branch Performance
+\begin{answered}
+    Instructions are Branch: 20\%, Load: 20\%, Store: 10\%, Other: 50\%. 75\% of \textit{Branch Instructions} are taken. What is the CPI?
+    
+    \begin{equation*}
+        CPI = 1 + 20\% \times 75\% \times \textbf{2}
+    \end{equation*}
+    \begin{equation*}
+        CPI = 1 + 0.20 \times 0.75 \times \textbf{2} = 1.3
+    \end{equation*}
+    
+    The \textbf{2} is because of the \textbf{2 cycle penalty} associated with branch mis-prediction.
+    
+    In this case, \textit{Branch Instructions} will cause a 30\% slow-down. We should be able to improve this if we do something a little less na\"ive than just assuming the \textit{Branch} is \textbf{not taken} each time. 
 \end{answered}
 
 \end{QandA}
