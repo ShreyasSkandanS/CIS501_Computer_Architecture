@@ -214,6 +214,8 @@ This will help us answer \textbf{(c) If a branch is taken, where does it go?}
 \end{itemize}
 
 The \textit{Branch Target Buffer (BTB)} does exist on the critical path and therefore adds a bit of extra overhead to the overall system. 
+
+With \textit{static targets}, the BTB mechanism will perform well.
 \end{answered}
 
 \item Branch Target Buffer Example
@@ -273,7 +275,120 @@ The following \textit{example} (Figure \ref{btb001} - Figure \ref{btb007}) assum
 
 \end{answered}
 
-\item Next thing
+\item What bits should you use as index bits and why do we discard the 2-bit least-significant bits?
+\begin{answered}
+The last 2 bits can be ignored because with MIPS, they are 32-bit instructions (PC is 32 bits) that are 4-bytes in size. You can throw away 2 bits because they will be the same (00) for all instructions since the instructions will all be incremented 4 bytes at a time. If you used these bits as BTB index bits, you would reduce your BTB target capacity implicitly. 
+
+We select lower order 7-bits instead of higher order 7-bits because the lower order bits change a lot more than the higher order bits during a program. This can also be thought of as picking bits that have the highest \textit{entropy} and therefore can store the largest amount of information.
+
+\textit{Is this the best way to do this hashing?} No, there are definitely better and more complicated ways to design a hashing function that better utilizes it's has indices. But this is a good start. 
+\end{answered}
+
+\item What is the purpose of the TAG entry in the Branch Target Buffer (BTB)?
+\begin{answered}
+%This will help us answer \textbf{(a) Is this a branch instruction?}
+To understand the purpose of the \textbf{tag} entries, imagine a scenario where we did not have the \textit{tag} entries. While running a program with many instructions, a situation will arise where the \textit{Branch Target Buffer (BTB)} has been completely filled with entries (it is \textbf{saturated}). What this means for the following instructions is that every incoming instruction is treated as a taken branch and is mapped to a \textit{target}, however this is definitely not the case.
+
+To avoid this situation, an additional \textbf{tag field} is introduced which associates a given \textit{Branch Target Buffer (BTB)} entry with a particular \textit{Program Counter (PC)}, which is used to tag that particular branching instruction. 
+
+During the actual \textbf{\textit{BTB} update}, this will look like:
+\begin{equation*}
+\begin{split}
+    BTB[PC].tag = & \ PC \\
+    BTB[PC].target = & \ \text{target of branch} 
+\end{split}
+\end{equation*}
+
+And at the \textbf{\textit{BTB} prediction step} in the \textit{Fetch Stage}, this will look like:
+\begin{equation*}
+    \begin{split}
+        Predicted\ PC\ = (BTB[PC].tag == PC)\ ?\ BTB[PC].target\ :\ PC + 4
+    \end{split}
+\end{equation*}
+\end{answered}
+\vspace{-0.8cm}
+
+\item Direct Targets and Indirect Targets
+\begin{answered}
+\textit{(a) Why does this simple \textit{Branch Target Buffer (BTB)} work?}
+
+Most control instructions use \textbf{direct targets}, i.e they branch to the same targets each time (\textit{example:} JMP instructions). And the \textit{BTB} does this really well.
+
+\qquad \textit{(b) What if this isn't the case?}
+
+There are plenty of cases where control instructions use \textbf{indirect targets}:
+\begin{itemize}
+    \item When you are branching to a value in a \textit{Register}. There is no way to know this in the \textit{Fetch Stage}.
+    \item Dynamically Linked Functions (DLLs) - here the control flow will usually jump to a table in memory to find out where to go next.
+    \item Virtual Functions (C++) - the control flow will usually branch to a location depending on the data type provided to the function (for \textit{example}).
+    \item Switch statements - difficult to handle but relatively uncommon
+    \item Function returns - challenging because of the need to return to the caller; this varies heavily. This is difficult but we can use additional hardware called a \textbf{Return Address Stack (RAS)} to handle this.
+\end{itemize}
+\end{answered}
+
+\item Return Address Stack (RAS)
+\begin{answered}
+The mechanism is a fairly straightforward stack operation. During a function call the next PC (PC+4) is placed on top of the stack. A return instruction's target prediction is done by popping an element from the stack.
+
+\textit{(a) How large is this stack?}
+
+It has a fixed capacity and hence will not work well for large amounts of instructions. But we can throw away the oldest instructions to ensure a relatively good accuracy for recent instructions. At the end of the day these are \textit{predictions} anyway, so if it is \textit{incorrect} for old instructions, it is alright.
+
+\textit{(b) How do we know when to use the RAS?}
+
+There is usually another level of prediction that will associate a \textit{Program Counter (PC)} with whether the \textbf{Return Address Stack (RAS)} is to be used or not. This will involve additional bits and hardware. 
+\end{answered}
+
+\item Branch Direction Prediction
+\begin{answered}
+We use a similar strategy from \textit{branch target prediction} where we want to \textit{learn from the past and predict the future}. Instead of learning a mapping from \textit{Program Counter (PC)} to \textit{Target}, here we learn a mapping from \textit{Program Counter (PC)} to a single \textit{Taken or Not Taken} bit. 
+
+Individual conditional branches are often very \textbf{biased}. Usually 90\% branch one way or the other.
+\end{answered}
+
+\item Bimodal Branch Predictor
+\begin{answered}
+This is the simplest form of \textit{branch direction prediction}, which is similar in design to the \textit{Branch Target Buffer (BTB)} except the \textbf{Branch History Table (BHT)} entry is a single bit for \textbf{Taken} or \textbf{Not Taken}. The following screenshots were taken from the \textit{http://comparchviz.com} tool.
+
+The following \textit{example} assumes a \textbf{Branch History Table (BHT)} with \textbf{2} index bits. The \textbf{BHT} is initialized with all \textbf{Not Taken (N)}. The \textbf{3} \textit{Program Counters (PCs)} in the system are $12$, $23$ and $12$.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp000.png}
+\caption{The Branch History Table (BHT) is initially set to all \textit{Not Taken}}
+\label{bbp000}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp001.png}
+\caption{An instruction arrives but a false prediction is made}
+\label{bbp001}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp002.png}
+\caption{The table is then updated}
+\label{bbp002}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp003.png}
+\caption{Another instruction arrives and a correct prediction is made}
+\label{bbp003}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp004.png}
+\caption{The first instruction arrives again and a correction prediction is made}
+\label{bbp004}
+\end{figure}
+
+
+\end{answered}
 
 \end{QandA}
 
