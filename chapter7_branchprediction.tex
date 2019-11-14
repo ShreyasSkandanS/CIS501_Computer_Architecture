@@ -160,13 +160,129 @@
     In this case, \textit{Branch Instructions} will cause a 30\% slow-down. We should be able to improve this if we do something a little less na\"ive than just assuming the \textit{Branch} is \textbf{not taken} each time. 
 \end{answered}
 
+\item Dynamic Branch Prediction
+\begin{answered}
+    Here the hardware \textbf{guesses} the outcome and starts to \textit{Fetch} from the guessed address. If this results in a mis-prediction, we can \textit{flush} instructions as seen above. This hardware exists in the \textit{Fetch Stage}, sitting concurrently with the \textit{Program Counter} register and it's incrementing hardware. 
+
+    \textit{Dynamic Branch Prediction Performance:}
+
+    Instructions are Branch: 20\%, Load: 20\%, Store: 10\%, Other: 50\%. 75\% of \textit{Branch Instructions} are taken. \textbf{Branch targets are predicted with 95\% accuracy}. What is the CPI?
+    
+    \begin{equation*}
+        CPI = 1 + 20\% \times 5\% \times \textbf{2}
+    \end{equation*}
+    \begin{equation*}
+        CPI = 1 + 0.20 \times 0.05 \times \textbf{2} = 1.02
+    \end{equation*}
+
+    In this case, \textit{Branch Instructions} will cause a 2\% slow-down. This is significantly better than the previous na\"ive approach. 
+\end{answered}
+
+\item Dynamic Branch Prediction Components
+\vspace{-0.85cm}
+\begin{answered}
+\begin{enumerate}
+    \item Is it a \textbf{branch}?
+    \item Is the branch \textbf{taken} or \textbf{not taken}?
+    \item If it is taken, \textbf{where} does it go?
+\end{enumerate}
+We need to be able to answer all these three questions \textit{speculatively}, and early on in the pipeline.
+
+A structure called the \textbf{Branch Target Buffer (BTB)} will be used to answer part (a) and (c) of our problem above. 
+
+A \textbf{Direction Predictor} structure will be used to answer (b). Historically, part (b) is the most challenging part of this problem and is most often associated with literature on \textit{dynamic branch prediction}.
+
+Things to keep in mind while navigating through the mess that is \textit{branch prediction}:
+\begin{itemize}
+    \item Which instruction are we trying to make predictions about? The instruction \textbf{ahead} of us in the pipeline; and this is recursively applied. 
+    \item Our notion of PC must now account for this since there are 5 instructions in the pipeline and they all have \textit{Program Counters}. 
+\end{itemize}
+
+\end{answered}
+
+\item Branch Target Prediction
+\begin{answered}
+This will help us answer \textbf{(c) If a branch is taken, where does it go?}
+
+\textbf{Gist:} \textit{Learn from the past, predict the future}. Disclaimer: Learn is a bit too strong a word, and \textit{memorize} is more in line with what actually occurs.
+
+\textbf{Branch Target Buffer (BTB):}
+\begin{itemize}
+    \item Working: \textit{"The last time that Branch X was taken, it went to address Y; so the next time if address X is fetched, the next address to be fetched is address Y."}
+    \item The BTB can be thought of as a \textit{hash table / table} that uses a fixed number of bits from a \textit{Program Counter} to index \textbf{target addresses}. For \textit{example:}, if bits 2$...$9 (7 bits) are used as index bits, we can keep track of $2^{7}$ target addresses. This also hints at why we don't use the entire PC as an index to the BTB - if you had 32-bits, that would result in $2^{32}$ target address - which would result in extremely high accuracy / precision of prediction, but require an unreasonable amount of hardware storage. Using 7-bits might not result in extremely high accuracy but this is ok since these are \textit{predictions} anyway.
+    \item \textit{Aliasing} - two PCs with the same 7-bits are also possible, but this conflict is fine since we're just doing our best at making predictions anyway and we have no guarantees of perfect performance.
+\end{itemize}
+
+The \textit{Branch Target Buffer (BTB)} does exist on the critical path and therefore adds a bit of extra overhead to the overall system. 
+\end{answered}
+
+\item Branch Target Buffer Example
+\begin{answered}
+These screenshots were taken from the \textit{http://comparchviz.com} tool.
+
+The following \textit{example} (Figure \ref{btb001} - Figure \ref{btb007}) assumes a 1-bit \textit{Branch Target Buffer} index, which means it has a capacity to learn $2^{1}$ target addresses and can be indexed by PC index bits $00$ and $01$.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb000.png}
+\caption{Branch Target Buffer is empty.}
+\label{btb001}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb001.png}
+\caption{Tag-mismatch since the BTB was previously empty with tag bits $00$.}
+\label{btb002}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb002.png}
+\caption{BTB is updated with previous \textit{tag} and \textit{target}.}
+\label{btb003}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb003.png}
+\caption{Next instruction arrives.}\
+\label{btb004}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb004.png}
+\caption{Mis-prediction because BTB is empty. Target is updated after this cycle.}
+\label{btb005}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb005.png}
+\caption{Next instruction arrives.}
+\label{btb006}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{chapter7_imgs/btb/btb006.png}
+\caption{Correct branch prediction is made.}
+\label{btb007}
+\end{figure}
+
+\end{answered}
+
+\item Next thing
+
 \end{QandA}
 
 \newpage 
 
-\section{Textbook Notes}
-\begin{QandA}
-\item 
-\end{QandA}
+
+%\section{Textbook Notes}
+%\begin{QandA}
+%\item 
+%\end{QandA}
 
 \end{document}
