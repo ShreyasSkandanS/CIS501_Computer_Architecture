@@ -12,7 +12,7 @@
 \usepackage{enumitem}
 \usepackage{cancel}
 \usepackage{soul}
-\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\alph*.]\bfseries}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
                       {\end{enumerate}}
 \newenvironment{answered}{\par\quad\normalfont}{}
 
@@ -328,7 +328,7 @@ There are plenty of cases where control instructions use \textbf{indirect target
 
 \item Return Address Stack (RAS)
 \begin{answered}
-The mechanism is a fairly straightforward stack operation. During a function call the next PC (PC+4) is placed on top of the stack. A return instruction's target prediction is done by popping an element from the stack.
+The mechanism is a fairly straightforward stack operation. During a function call the next PC, \textit{(PC+4)}, is placed on top of the stack. A return instruction's target prediction is done by popping an element from the stack.
 
 \textit{(a) How large is this stack?}
 
@@ -354,39 +354,148 @@ The following \textit{example} assumes a \textbf{Branch History Table (BHT)} wit
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp000.png}
+\includegraphics[width=0.45\textwidth]{chapter7_imgs/bbp/bbp000.png}
 \caption{The Branch History Table (BHT) is initially set to all \textit{Not Taken}}
 \label{bbp000}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp001.png}
+\includegraphics[width=0.45\textwidth]{chapter7_imgs/bbp/bbp001.png}
 \caption{An instruction arrives but a false prediction is made}
 \label{bbp001}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp002.png}
+\includegraphics[width=0.45\textwidth]{chapter7_imgs/bbp/bbp002.png}
 \caption{The table is then updated}
 \label{bbp002}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp003.png}
+\includegraphics[width=0.45\textwidth]{chapter7_imgs/bbp/bbp003.png}
 \caption{Another instruction arrives and a correct prediction is made}
 \label{bbp003}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.5\textwidth]{chapter7_imgs/bbp/bbp004.png}
+\includegraphics[width=0.45\textwidth]{chapter7_imgs/bbp/bbp004.png}
 \caption{The first instruction arrives again and a correction prediction is made}
 \label{bbp004}
 \end{figure}
+\end{answered}
 
+\item Two-Bit Saturating Counter (2BC)
+\begin{answered}
+
+\textit{Failure of Bimodal Branch Predictor:}
+
+An obvious situation in which the bimodal branch predictor will fail is in nested loops such as the following:
+\begin{equation*}
+\begin{split}
+    & \text{for (i=0;i$<$100;i++)} \\
+    & \quad \text{for (j=0;j$<$3;j++)} \\
+    & \quad \quad ...
+\end{split}
+\end{equation*}
+
+In the above situation, a bi-modal branch predictor will continuously switch between states and result in a low prediction accuracy.
+
+The previous \textit{Branch History Table (BHT)} based approach can be thought of as \textbf{changing it's mind too quickly}. We can introduce a level of \textbf{resistance} and force the predictor to \textit{mis-predict twice before changing it's mind}. This is done by using a \textbf{2-bit saturating counter} that will essentially model a four-state finite state machine. The additional bits provide a larger memory.
+
+\begin{equation*}
+    (0,1,2,3) = (N,n,t,T)
+\end{equation*}
+
+The state-transition $(state,prediction)\rightarrow(state)$ function can be thought of as follows:
+\begin{equation*}
+    \begin{split}
+        (N, NT) & \rightarrow N , \quad (T, NT) \rightarrow t \\
+        (N, T) & \rightarrow n , \quad (T, T) \rightarrow T \\
+        (n, NT) & \rightarrow N , \quad (t, NT) \rightarrow n \\
+        (n, T) & \rightarrow t , \quad (t, T) \rightarrow T \\
+    \end{split}
+\end{equation*}
+\end{answered}
+
+\item GShare History-Based Predictor
+\begin{answered}
+While the last two methods of \textit{Bimodal Branch Predictor 1-bit} and \textit{2-bit Saturating Counters} did a reasonable job at learning previous history, there are conditions such as below where learning history is insufficient. We need to instead learn to identify recurring patterns of instructions.
+
+In the \textit{example} below, the modulo three conditional branch is repeated twice as seen in \textit{(i) and (ii)}, but they are separated by some unrelated, unpredictable set of instructions. In this case, the above two methods would not be able to effectively predict the right branch targets even though it has previously seen the same instructions.
+
+\begin{equation*}
+\begin{split}
+    & \text{for(i=0;i$<$10000;i++)} \\
+    & \{ \\
+    & \quad\textbf{if(i\%3==0)}\ \{ \quad\quad \textit{--- (i)}\\
+    & \quad\textit{...} \\
+    & \quad \} \\
+    & \quad ... \\
+    & \quad \textit{... unrelated sequence ...} \\
+    & \quad ... \\
+    & \quad\textbf{if(i\%3==0)}\ \{ \quad\quad \textit{--- (ii)}\\
+    & \quad\textit{...} \\
+    & \quad \} \\ 
+    & \}
+\end{split}
+\end{equation*}
+
+GShare maintains a \textbf{Branch History Register (BHR)} in addition to a \textbf{Branch History Table (BHT)}, which typically will use \textbf{2-bit Saturating Counters}.
+
+\textit{How do we incorporate this idea of history and correlation into our predictions?}
+
+Instead of using just the \textit{Program Counter (PC)} as the index into the \textit{Branch History Table (BHT)}, use PC $\oplus$ BHR (xor operation) as the index to the BHT. This will result in more unique \textit{keys / indexes} into the table.
+
+We need to train the counter (BHT) and the BHR (\textit{Branch History Register}) after each branch instruction.
+\end{answered}
+
+\item GShare Example
+\begin{answered}
+This example is taken from \textit{http://comparchviz.com}.
+\end{answered}
+
+\item Hybrid Tournament Predictor
+\begin{answered}
+A simple \textit{bimodal branch predictor} is good for short term history dependent branches and is fast. Most static target branch prediction can be accomplished by this method. A \textit{gshare correlated branch predictor} is good for branch prediction that requires pattern identification and correlated branches over time. \textit{Can we combine the two?}
+
+A \textbf{Hybrid Predictor} combines the above mentioned predictors and introduces a third component called the \textbf{chooser} which learns to predict which of the above two methods to use. This allows the correlated predictor to become smaller than previously defined and results in 90-95\% accuracy. 
+\end{answered}
+
+\item Reducing Branch Penalty
+\begin{answered}
+Even a taken branch results in a \textbf{2 cycle} branch penalty. Can we decide a faster branching strategy that can decide at the \textit{Decode Stage} and not the \textit{Execute Stage} on instructions that require some test conditions?
+
+What if we evaluate test conditions that are checking for \textit{equality} or a \textit{comparison} and we do this in the \textit{Decode Stage}? This would reduce the branch penalty to \textbf{1 cycle} in these cases.
+
+\textit{Performance:}
+
+Let's say that Branches: 20\% and 75\% of branches are taken. Out of these branches, 25\% cannot be optimized with the method above and require an additional cycle.
+
+\begin{equation*}
+    CPI = 1 + \text{fast branch instructions} + \text{regular instructions}
+\end{equation*}
+\begin{equation*}
+    CPI = 1 + (0.20 \times 0.75 \times 1) + (0.20 \times 0.25 \times 1) = 1.2
+\end{equation*}
+
+\textit{Branch Predictions} are still a big problem even with all these optimizations. For typically large pipelines, mis-predictions cost the system 10+ cycles!
+\end{answered}
+
+\item Predication
+\begin{answered}
+\textit{Instead of predicting which way we're going, why not go both ways?}
+
+Predication is an \textbf{alternate view} that attempts to get rid of branch prediction by rephrasing control flow instructions as conditional instructions. The condition is represented by a \textbf{predicate bit} and these instructions will either execute as normal or as \textit{no-ops} depending on this predicate bit.
+
+For control sequences such as an \textbf{if-then} statement, there will be no overhead and therefore there are gains in performance to be had. 
+
+However, in \textbf{if-then-else} statements, since there is only \textbf{one} useful path, this might not be very effective. 
+
+Predicated instructions are useful only if the number of cycles saved is more than the mis-prediction penalty if we were using regular branch predictors. 
 
 \end{answered}
 
