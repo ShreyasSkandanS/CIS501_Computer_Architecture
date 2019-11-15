@@ -503,10 +503,75 @@ Predicated instructions are useful only if the number of cycles saved is more th
 
 \newpage 
 
+\section{Textbook Notes}
+\begin{QandA}
+\item Control Hazards
+\begin{answered}
+Control hazards occur less frequently than data hazards, and there is nothing as effective against control hazards as forwarding / bypassing is against data hazards.
+\end{answered}
 
-%\section{Textbook Notes}
-%\begin{QandA}
-%\item 
-%\end{QandA}
+\item Fast Branching
+\begin{answered}
+Many branch instructions rely on simple tests (\textit{equality or sign, for example}) and such tests do not require a full \textbf{ALU} and can be done independently with a few gates. For these instructions, we can reduce the cost by one cycle. 
+
+When a more complex branch decision is required, a separate instruction that uses an ALU to perform a comparison is used.
+\end{answered}
+
+\item Drawback of 1-bit Bimodal Branch Predictor
+\begin{answered}
+Even if a branch is almost always taken, we can predict incorrectly twice, rather than once, when it is not taken. 
+
+\textit{Consider a loop branch that branches nine times in a row, then is not taken once. What is the prediction accuracy for this branch, assuming the prediction bit for this branch remains in the prediction buffer?}
+
+There will be a mis-prediction at the entry to this loop and one at the end, resulting in 80\% accuracy even though the branch is taken 90\% of the time. We should be able to do better than this? \textbf{Yes, use 2-bit saturating counter.}
+\end{answered}
+
+\item 2-bit Saturating Counter Branch Predictor
+\begin{answered}
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.4\textwidth]{chapter7_imgs/2bitsatcounter.png}
+\caption{Finite State Machine for 2-bit Saturating Counter}
+\label{2bitsatcounter}
+\end{figure}
+\end{answered}
+
+\end{QandA}
+
+\newpage 
+
+\section{Exam Questions}
+\begin{QandA}
+\item List one source of slowdown that increases as pipeline depth increases
+\begin{answered}
+Branch mis-prediction penalty
+\end{answered}
+
+\item A bimodal branch predictor augmented with a branch history register is known as what kind of predictor?
+\begin{answered}
+GShare Branch Predictor
+\end{answered}
+
+\item What does BTB stand for?
+\begin{answered}
+Branch Target Buffer
+\end{answered}
+
+\item What are the three steps / questions involved with Branch Prediction?
+\vspace{-0.85cm}
+\begin{answered}
+\begin{enumerate}
+    \item Is this instruction a branch?
+    \item If it is a branch, is it taken or not taken?
+    \item If it is taken, where is it going?
+\end{enumerate}
+\end{answered}
+
+\item Your pipelined processor in Lab 4 implements speculative branch prediction (true / false)?
+\begin{answered}
+True, because even just predicting $PC=PC+1$ is a form of speculation.  
+\end{answered}
+
+\end{QandA}
 
 \end{document}
