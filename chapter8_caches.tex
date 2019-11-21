@@ -105,6 +105,8 @@ A key strategy in improving memory performance is \textit{Locality}.
     
     \quad There is a small overhead, but since these two hardware structures can be \textbf{accessed in parallel}, performance is not affected too much.
     
+    \item In modern implementations, more than one address is stored in each cache block since typical architectures have more than single byte granularity. Therefore, the entries in each block come from a contiguous set of addresses and inherently exhibit \textit{spatial locality}. 
+    
     \item At this basic level, to remember are:
     \begin{itemize}
         \item Index Bits : which row in cache?
@@ -148,6 +150,10 @@ A \textbf{Cache Controller} is a finite state machine that is responsible for re
 
 \textit{Note:} Since a cache miss is technically a function of all the latency associated with retrieving data from the different layers of memory, this above equation is usually \textbf{recursive} up-to the number of layers in the memory hierarchy.
 
+\textit{What's the simplest way to reduce $\%_{misses}$?}
+
+\quad Increase capacity! Miss rates will decreases monotonically but at a certain size of \textbf{working set} you will notice diminishing returns. And with the increased capacity, $t_{access}$ inevitably increases, resulting in lower performance. Intuitively, remembering more $\implies$ miss less, \textbf{but} remembering more $\implies$ access it slower.
+
 \textit{Example \#1:} 
 
 If you have a simple pipeline with $CPI_{base}=1$ and 30\% of instructions are LDR and STR. If the L1 cache has $\%_{miss}=2\%$ for the Instruction Cache (I\$) and $\%_{miss}=10\%$ for the Data Cache (D\$) with a miss penalty of $t_{miss}=10$ cycles for both, what is the new $CPI_{new}$?
@@ -160,7 +166,58 @@ If you have a simple pipeline with $CPI_{base}=1$ and 30\% of instructions are L
 \end{equation*}
 \end{answered}
 
+\item Cache Organization Example
+\begin{answered}
+A system has 4-bit addresses ($\rightarrow$ 16B memory) and an 8B cache with a block size of 2B. What are the \textit{Index Bits}, \textit{Offset Bits} and \textit{Tag Bits}? 
 
+The number of rows (sets) is: $\frac{\text{cache capacity}}{\text{block size}}$ = $\frac{8B}{2B} = 4$
+
+\textbf{Offset Bits:} The number of bytes in a block is 2, therefore you will need $log_{2}(2)=1$ offset bits.
+
+\textbf{Index Bits:} There are 4 rows (sets) of cache blocks / lines, therefore you will need $log_{2}(4)=2$ index bits.
+
+\textbf{Tag Bits:} The remaining bits will be used as tag bits, i.e 4 (total) - 1 (offset) - 2 (index) = 1 tag bit. 
+\end{answered}
+
+\item Performance Optimizations
+\begin{answered}
+As we have noticed, increasing the size of the cache doesn't necessarily result in improvement in performance. We need to think of other mechanisms that can help manipulate the $\%_{misses}$ by changing how the cache is organized, given that it has a fixed capacity.
+
+\begin{enumerate}
+    \item Increasing Block Size
+    \item Adding Associativity
+\end{enumerate}
+\end{answered}
+
+\item Increasing Block Size
+\begin{answered}
+This seems valid and is directly tied to the notion of \textit{spatial locality}. 
+
+\textit{Q: How do the different bits change with increasing block size?}
+
+\quad If the size of the blocks increases, each block will have more bytes, and therefore will require \textbf{more offset bits} to individually index into them. Since the size of the cache is fixed, this will mean that the number of sets / rows will actually reduce, resulting in \textbf{fewer index bits}. The tag bits remain unchanged. 
+
+\textit{Q: Can any of these go to 0 bits?}
+
+\quad This is possible, if the block size is made equal to the size of the entire cache, this would mean that there is a single cache block / line, which will require no index bits. 
+
+\textit{Q: Since the number of tag bits stays the same during the increase in block size, why does the overhead associated (\textbf{tag overhead}) with the tag reduce?}
+
+\quad While the tags remain at the same size, the number of total tags is reduced. Since each tag is associated with a set / row, and the number of sets / rows reduces, you will have fewer tag entries resulting in a lower overhead. 
+
+\begin{equation*}
+    \text{Tag Overhead} = \frac{\text{Number of Tag Bits}}{\text{Block Size in Bits}}
+\end{equation*}
+
+\textit{Q: What are the implications of larger block sizes on \textbf{performance?}}
+
+\quad Since the block size is larger, more \text{adjacent data} is brought in per operation resulting in more \textbf{spatial pre-fetching} which can reduce the $\%_{misses}$ upto a point. However, after a certain point $\%_{misses}$ starts to increase because (a) potentially \textbf{useless data is also transferred} and (b) we might be \textbf{prematurely replacing} useful data.
+
+\textit{Q: How does increasing block size affect the miss penalty / latency $t_{miss}$?}
+
+\quad Technically, since the blocks are larger, they should take longer to \textbf{read, transfer} and \textbf{fill}. However, if you use \textbf{Critical World First (or) Early Restart} you can avoid this effect on isolated misses. This technique allows for the requested word to be fetched first and the remaining words are filled in the background. This will not, however, improve the situation where a cluster of misses occurs as this will turn into a \textit{bandwidth problem} under those circumstances. 
+
+\end{answered}
 
 \end{QandA}
 
