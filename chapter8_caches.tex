@@ -1,0 +1,167 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Caches}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+\item Memory
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Memory is tricky - it can either be \textit{large} (number of bits that it can store) or it can be \textit{fast} (time taken to access an entry), but it cannot be both.
+    \item Volatile Memory:
+    \begin{enumerate}
+        \item \textbf{Static RAM (SRAM)} is very fast and is most often used in CPU \textit{L1 and L2 caches}. The latency is in the \textit{sub-nanoseconds}.
+        \item \textbf{Dynamic RAM (DRAM)} is optimized for density and is slower (in the \textit{tens of nanoseconds}). DRAM is synonymous with regular PC ram and the speeds associated (3200MHz) with RAM is it's refresh rate. \textit{Refreshing} RAM is not required in \textit{Static RAM}.
+    \end{enumerate}
+    \item Non-Volatile Memory: Magnetic Disks, Flash RAM \textit{etc.}
+    \item Good caching strategies are important because if you have a \textit{cache miss}, you will be forced to access lower levels of memory which are very expensive (\textit{slow}) operations.
+\end{itemize}
+\end{answered}
+
+\item The Memory Wall
+\begin{answered}
+\textit{Processor speeds are increasing at a faster rate than memory speeds}. 
+
+Clever designs are required to harness the effective speeds of the CPU because a 4GHz processor might be wasted on a system whose memory access latency is 12 milliseconds (\textit{magnetic disk}).
+\end{answered}
+
+\item Memory Hierarchy
+\begin{answered}
+As hinted above, a processor can only compute as fast as it can access memory. For \textit{example:} a 3GHz processor can execute ADD instructions in 0.33ns. However, your average \textit{main memory} latency is more than 33ns. And LDR and STR instructions require even more time.
+
+But it's impossible to have memory that can \textit{keep up} with the fast processor clock rates while having sufficient amount of space for running programs. How do you address this problem? \textit{A \textbf{hierarchy} of memory}.
+
+\textit{Organization:}
+
+The goal is to have multiple layers of memory between the \textit{CPU} and the \textit{Hard Disk} that try to deliver both \textit{fast} memory and \textit{large} memory in a hierarchical manner, with the \textit{fastest} layers of memory, \textbf{L1 cache} (I\$ and D\$), \textbf{L2 cache} and \textbf{L3 cache} being close to the CPU, followed by \textbf{Main Memory} and eventually the \textbf{Disk}.
+
+\begin{center}
+\begin{tabular}{ |c|c|c|c| } 
+\hline
+Level & Memory Type & Managed By \\
+\hline
+0 & Registers & Compiler \\ 
+1 & Primary Cache - I\$ and D\$ (L1) & Hardware \\ 
+2 & Second and Third Cache (L2, L3) & Hardware \\ 
+3 & Main Memory & OS \\ 
+4 & Disk & OS \\ 
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Note:} Level 0, Level 1 and Level 2 are usually \textbf{on-chip}. Main Memory is made of \textit{DRAM} and is usually of in the order of 8GB to 16GB on professional machines. 
+
+\textit{Note:} Chips today (Intel Core i7) are usually 30-70\% cache by area.
+
+\end{answered}
+
+\item Locality
+\begin{answered}
+A key strategy in improving memory performance is \textit{Locality}. 
+\begin{itemize}
+    \item \textbf{Spatial Locality:} if a program recently referenced a chunk of data, it is likely to refer to data \textit{near} (in memory) that chunk of data soon. To improve performance, we can \textbf{proactively} fetch large chunks of data including data nearby and keep it available for fast access since the program will be likely to request it soon anyway. \textit{Example:} arrays.
+    \item \textbf{Temporal Locality:} if a program recently referenced data, it is likely to refer to that data \textit{again} soon. To improve performance, we can \textbf{reactively} "cache" this data in small, fast memory so that the program can use it again quickly. \textit{Example:} counter variables.
+\end{itemize}
+\end{answered}
+
+\item Cache Overview
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item A cache is a hardware \textit{hashtable}.
+    \item A cache is typically organized as a number of individual cache \textbf{blocks} or cache \textbf{lines}. For \textit{example:} a 4KB cache can be organized as 1024 $\times$ 4B ($4 \times 8$ = 32 bits) blocks / lines. Since there are 1024 blocks, you will need $log_{2}(1024) = 10$ bits to index into this cache. These are \textbf{Index Bits}.
+    \item \textbf{Offset Bits:} to index to specific bytes within a cache block, the \textit{Least Significant Bits (LSB)} are used. For the above \textit{example}, since there are 4 bytes in a cache block, you would need $log_{2}(4)=2$ offset bits along with the 10 \textit{Index Bits}.
+    
+    \textit{Q: Offset Bits aside, Why should we use the remaining 10 bits of Least Significant Bits as Index bits instead of maybe the Most Significant Bits?}
+    
+    \quad Lower order bits have a higher entropy in the general execution of a program. Higher order bits also are at risk of hashing to the same entry.
+    
+    \item \textbf{Tag Bits:} How can you know what blocks, if any, are in the cache? In the previous \textit{example}, the remaining bits (32 bits - 10 bits - 2 bits = 20 bits) are used to \textit{tag} each cache word. These tag bits are entered into a separate (and parallel) memory structure called the \textbf{Tag Array}. Additional to the 20 bits is a single \textit{Valid Bit} to indicate if there is information in the cache blocks or not. 
+    
+    \textit{Q: Since this mechanism adds extra hardware (it is now doubled) to the cache, is it much slower?}
+    
+    \quad There is a small overhead, but since these two hardware structures can be \textbf{accessed in parallel}, performance is not affected too much.
+    
+    \item At this basic level, to remember are:
+    \begin{itemize}
+        \item Index Bits : which row in cache?
+        \item Offset Bits : which column (byte) in cache?
+        \item Tag Bits : different memory being mapped to the same cache block?
+        \item Tag Array : where are tag bits stored?
+        \item Valid Bit : is this a valid cache entry?
+    \end{itemize}
+\end{itemize}
+\end{answered}
+
+\item Cache Miss
+\begin{answered}
+\textit{What if the data that was requested isn't in the cache? Who handles this?}
+
+A \textbf{Cache Controller} is a finite state machine that is responsible for remembering the address of data that resulted in a \textit{cache miss}. It accesses the next level of memory in order to acquire the necessary data. It must wait until it receives a response and then must write the required information and tags into the proper location in the cache. 
+\end{answered}
+
+\item Glossary
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Access : read or write to cache
+    \item Hit : required data was found in cache
+    \item Miss : required data was not found in cache
+    \item Fill : bringing required data into the cache
+    \item Miss Rate ($\%_{misses}$) : ratio of misses to accesses
+    \item Access Latency ($t_{access}$) : time to check cache
+    \item Miss Latency ($t_{miss}$) : time to read data into cache
+\end{itemize}
+\textit{Note:} A \textbf{Fill} usually also entails the costs involved in \textit{evicting} data that was already in the cache to make room for the new data that is incoming. 
+\end{answered}
+
+\item Performance Equation
+\begin{answered}
+\vspace{-0.45cm}
+\begin{equation}
+    t_{average} = t_{access} + (\%_{misses} \times t_{miss})
+\end{equation}
+\textit{Note:} $t_{access}$ is paid regardless of whether it was a hit or a miss. It is the cost associated with reading or writing to the cache.
+
+\textit{Note:} Since a cache miss is technically a function of all the latency associated with retrieving data from the different layers of memory, this above equation is usually \textbf{recursive} up-to the number of layers in the memory hierarchy.
+
+\textit{Example \#1:} 
+
+If you have a simple pipeline with $CPI_{base}=1$ and 30\% of instructions are LDR and STR. If the L1 cache has $\%_{miss}=2\%$ for the Instruction Cache (I\$) and $\%_{miss}=10\%$ for the Data Cache (D\$) with a miss penalty of $t_{miss}=10$ cycles for both, what is the new $CPI_{new}$?
+
+\begin{equation*}
+    CPI_{new} = CPI_{base} + \%_{I-miss} \times t_{I-miss} + \%_{D-miss} \times t_{D-miss}
+\end{equation*}
+\begin{equation*}
+    CPI_{new} = 1.0 + 0.02 \times 10 + 0.1 \times 10 = 1 + 0.2 + 0.3 = 1.5
+\end{equation*}
+\end{answered}
+
+
+
+\end{QandA}
+
+\end{document}
