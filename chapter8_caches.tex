@@ -219,6 +219,57 @@ This seems valid and is directly tied to the notion of \textit{spatial locality}
 
 \end{answered}
 
+\item Associativity
+\begin{answered}
+\textbf{Cache Conflicts:} If you had had 16B of Main Memory and an 8B cache, can multiple addresses in memory map to the same location in the cache? \textbf{Yes}. You will essentially have 8 situations of conflict.
+
+For example addresses 0\textbf{01}0 and 1\textbf{01}0 will get mapped to the same location in the cache because they have the same \textbf{index bits}. Even if 0\textbf{01}0 was the only element in the cache, with 7 remaining bytes free, 1\textbf{01}0 would still conflict with it. Can we fix this? \textbf{Yes}, but this will take further re-organization of the cache structure.
+
+\ 
+
+\textit{Introduction:}
+
+In a \textbf{Direct Mapped Cache}, there is only one cache block where a memory block (\textit{example:} 12) can be found, and if there are 8 blocks (and rows), then memory block 12 will get mapped to (12 modulo 8 = 4), i.e block id 4 in the cache. 
+
+In a \textbf{2-Way Set Associative Cache}, there would be four sets (rows) and memory block 12 must be in either one of the two (12 modulo 4 = 0) cache blocks. 
+
+In a \textbf{Fully Associative Cache}, the memory block 12 can appear in any of the eight cache blocks. 
+
+\
+
+\textit{Q: What is the effect of increasing \textbf{associativity} on the different bits?}
+
+\quad If associativity increases, the number of index bits will decrease and the number of tag bits will increase. For \textit{example:}, a direct mapped cache will require more index bits than a 2-way set associative cache. 
+
+\textit{Q: What is the lookup procedure?}
+
+\quad As before, the \textbf{index bits} are used to find the set / row. The data and tags in all frames are read in parallel. If any of them match and the \textbf{valid bit} is set, then it is a \textit{Hit}. 
+
+\
+
+\textbf{Replacement Policies}
+
+With N-Way Associative Caches, what happens during a \textit{Cache Miss}? Which block in a set should be evicted?
+\begin{itemize}
+    \item Random
+    \item FIFO
+    \item \textbf{Least Recently Used (LRU)} : works well in practice. Requires additional \textbf{LRU bits} - for a 2-Way Set Associative cache, this is just a single bit.
+    \item Not Most Recently Used (NMRU) : approximation of LRU, easier to implement
+    \item Belady's : replace what will be used furthest in the future - impractical but good for simulation and pre-recorded traces 
+\end{itemize}
+
+\ 
+
+\textit{Q: What is the impact of associativity on \textbf{performance}?}
+
+\quad With higher associative caches, you will have a lower $\%_{misses}$, but at a certain point you will have diminishing returns because $t_{access}$ will increase. 
+
+\textit{Q: Does associativity need to be powers of 2?}
+
+\quad No it does not!
+
+\end{answered}
+
 \end{QandA}
 
 \end{document}
