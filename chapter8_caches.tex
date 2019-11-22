@@ -179,6 +179,8 @@ The number of rows (sets) is: $\frac{\text{cache capacity}}{\text{block size}}$ 
 \textbf{Tag Bits:} The remaining bits will be used as tag bits, i.e 4 (total) - 1 (offset) - 2 (index) = 1 tag bit. 
 \end{answered}
 
+\ 
+
 \item Performance Optimizations
 \begin{answered}
 As we have noticed, increasing the size of the cache doesn't necessarily result in improvement in performance. We need to think of other mechanisms that can help manipulate the $\%_{misses}$ by changing how the cache is organized, given that it has a fixed capacity.
@@ -220,10 +222,13 @@ This seems valid and is directly tied to the notion of \textit{spatial locality}
 \end{answered}
 
 \item Associativity
+
+\ 
+
 \begin{answered}
 \textbf{Cache Conflicts:} If you had had 16B of Main Memory and an 8B cache, can multiple addresses in memory map to the same location in the cache? \textbf{Yes}. You will essentially have 8 situations of conflict.
 
-For example addresses 0\textbf{01}0 and 1\textbf{01}0 will get mapped to the same location in the cache because they have the same \textbf{index bits}. Even if 0\textbf{01}0 was the only element in the cache, with 7 remaining bytes free, 1\textbf{01}0 would still conflict with it. Can we fix this? \textbf{Yes}, but this will take further re-organization of the cache structure.
+For \textit{example:} addresses 0\textbf{01}0 and 1\textbf{01}0 will get mapped to the same location in the cache because they have the same \textbf{index bits}. Even if 0\textbf{01}0 was the only element in the cache, with 7 remaining bytes free, 1\textbf{01}0 would still conflict with it. Can we fix this? \textbf{Yes}, but this will take further re-organization of the cache structure.
 
 \ 
 
@@ -241,11 +246,15 @@ In a \textbf{Fully Associative Cache}, the memory block 12 can appear in any of 
 
 \quad If associativity increases, the number of index bits will decrease and the number of tag bits will increase. For \textit{example:}, a direct mapped cache will require more index bits than a 2-way set associative cache. 
 
+\ 
+
 \textit{Q: What is the lookup procedure?}
 
 \quad As before, the \textbf{index bits} are used to find the set / row. The data and tags in all frames are read in parallel. If any of them match and the \textbf{valid bit} is set, then it is a \textit{Hit}. 
 
 \
+
+\newpage 
 
 \textbf{Replacement Policies}
 
@@ -258,8 +267,6 @@ With N-Way Associative Caches, what happens during a \textit{Cache Miss}? Which 
     \item Belady's : replace what will be used furthest in the future - impractical but good for simulation and pre-recorded traces 
 \end{itemize}
 
-\ 
-
 \textit{Q: What is the impact of associativity on \textbf{performance}?}
 
 \quad With higher associative caches, you will have a lower $\%_{misses}$, but at a certain point you will have diminishing returns because $t_{access}$ will increase. 
@@ -267,6 +274,163 @@ With N-Way Associative Caches, what happens during a \textit{Cache Miss}? Which 
 \textit{Q: Does associativity need to be powers of 2?}
 
 \quad No it does not!
+\end{answered}
+
+\item Caches and Stores
+\begin{answered}
+Everything we have talked about so far has been in the context of reading from the cache, such as during a LOAD instruction. What about \textit{STORE} instructions that write to the cache?
+
+\quad This will mainly involve the Data Cache (D\$) since the Instruction Cache (I\$) is basically read-only. 
+
+\quad Issues arise with \textit{write} operations because as we've hinted at before, there are \textbf{multiple copies} of a particular item across different levels of memory. When a \textit{write/store} operation is performed, how do we \textbf{keep track} of all these different copies and update them accordingly? And how to we guarantee \textbf{consistency} across the different memory levels?
+
+\quad Another problem is with \textbf{tag / data access}: With read operations both tag and data arrays could be accessed in parallel. If there was a \textit{tag mismatch}, that meant that the data was wrong and you could just \textit{stall} until the right data is fetched. What about during a \textbf{write}?
+
+\quad We cannot \textbf{read tag} and \textbf{write data} in parallel because if you happen to write the wrong data - you've made a permanent change and it is hard to recover from this. Therefore, with \textit{write} operations, this is a \textbf{two-step} process where:
+\begin{itemize}
+    \item You first match the tag
+    \item Then write to the matching \textit{way} 
+\end{itemize}
+This could introduce structural hazards and will require bypassing to avoid unnecessary stalls.
+\end{answered}
+
+\item Propagating Writes
+\begin{answered}
+\textit{Q: Since lower levels of memory (basically the entire memory hierarchy) need to be updated by write instructions, when should you propagate these updated values?}
+
+\quad There are two approaches to this: \textbf{Write-Through} and \textbf{Write-Back}. Modern systems will often use both of these techniques at different levels in memory. 
+
+\textbf{Write-Through:}
+\begin{itemize}
+    \item This is the \textit{simplest approach}.
+    \item This method does require extra bandwidth since you are basically updating the different memory levels each time the cache is updated.
+    \item No special hardware is needed.
+\end{itemize}
+
+\textbf{Write-Back:}
+\begin{itemize}
+    \item In this approach, a \textit{write} is propagated only when a block is replaced.
+    \item There is a \textbf{dirty bit} associated with each block.
+    \item A \textbf{clean block} indicates that all occurrences of this value are consistent, and that there is another copy of this block somewhere. Therefore, evicting a clean block is more straightforward and easy to do.
+    \item A \textbf{dirty block} is one that has been updated, meaning that there is a \textit{mismatch} across it's \textit{copies}. These are more challenging to handle.
+    \item We use an additional \textit{hardware structure} called the \textbf{Write-Back Buffer (WBB)}. The \textit{intuition} here is to take advantage of caching and only update one level of the hierarchy. Delay the process of updating the rest of the hierarchy for a later time, i.e propagate these changes at a different pace. This does however require an additional amount of bookkeeping to make sure that the changes do actually propagate. 
+    \item The contents of the \textit{Write-Back Buffer} will be pushed down the hierarchy and at each stage it will be labeled \textit{dirty} until it reaches the \textit{main memory} and \textit{disk}.
+    \item This method uses less bandwidth
+    \item \textit{Q: Why use a Write-Back Buffer?} The WBB helps by being an intermediate storage element so that blocks can be \textbf{quickly evicted} and placed here thus freeing up room in the faster memory level. 
+\end{itemize}
+\end{answered}
+
+\ 
+
+\item Write Misses
+\begin{answered}
+Next we will see how \textit{write misses} are actually handled and some optimizations that can be made to improve efficiency:
+
+\textit{Q: How are write misses handled?}
+
+\quad \textbf{Write-Allocate:} fills block from next level, then write it. This is commonly used, reduces read misses but requires additional bandwidth. \textbf{Write-Non-Allocate:} just writes to the next level, does not allocate. Results in more read misses but uses less bandwidth. Usually used with \textit{Write-Through} propagation.
+
+\textit{Q: A LOAD instruction during a \textbf{read miss} can't go on without the data so it must stall, but does a STORE instruction during a \textbf{write miss} need to stall?}
+
+\quad No, we can actually keep going. And to do this, we require another hardware structure called the \textbf{Store Buffer}. STORE instructions put addresses / values into the store buffer and keep going. The caveat is that \textbf{LOAD} instructions must now also check the \textit{Store Buffer} in addition to Data Memory. 
+\end{answered}
+
+\ 
+
+\item What are the three types of cache misses?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item \textbf{Compulsory} Miss : It has never seen this address before, and no cache can help with this type of miss, even an infinitely sized cache.
+    \item \textbf{Capacity} Miss : The miss occurred because the cache was too small. This miss would occur even if it was a fully associative cache.
+    \item \textbf{Conflict} Miss : Miss caused because the associativity was too low. 
+    \item \textit{Coherence Miss} : Miss caused by external invalidation.
+\end{itemize}
+\end{answered}
+
+\item What is a way of reducing Conflict Misses?
+\begin{answered}
+Conflict Misses occur as a result of insufficient associativity. Adding more associativity to the cache is \textit{expensive} and rarely needed. But what if you could get \textit{associativity on demand} if/when you actually need it? This is what a \textbf{Victim Buffer (VB)} will provide.
+
+\quad The \textbf{Victim Buffer} is a fully associative cache that sits on the L1 cache path. It is \textit{small} and \textit{very fast}. It holds blocks that were evicted from some other level and can provide these at a very low latency when required. If you have a \textit{miss} and find it in the victim buffer, you can quickly place the block back in the L1 cache. It will be faster than accessing the L2 cache. 
+\end{answered}
+
+\
+
+\item What is a way of reducing Compulsory Misses?
+\begin{answered}
+Bring data into the cache \textbf{proactively} / \textbf{speculatively}. Anticipate upcoming miss addresses and bring them into the cache. This is called \textit{Prefetching} and can be done using simple hardware table-driven prefetching. It can identify common strides and access patterns and use predictors to identify and fetch data. 
+
+\textit{Software Prefetching} exists too which is usually inserted by the programmer or the compiler.
+\end{answered}
+
+\ 
+
+\item What is a way of reducing Capacity Misses?
+\begin{answered}
+Capacity misses are usually a result of poor spatial or temporal locality. \textbf{Code Restructuring} is a simple yet effective way to handle this problem in many cases.
+
+\textbf{Loop interchange}: Depending on whether your programming language is \textit{row-major} or \textit{column-major}, a simple interchange of iterator variables can result in a significant increase in performance.
+
+\textbf{Loop blocking}: If accesses are spread out over time, you can exploit temporal locality to fetch and store a cache sized amount of data and more quickly access it. 
+\end{answered}
+
+\newpage 
+
+\item Designing a Cache Hierarchy
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Higher level caches \textit{(L1 cache)} optimize for $t_{access}$. They are more frequently accessed. They have lower capacity and smaller block sizes.
+    \item Lower level caches \textit{(L2 and L3 cache)} optimize for $\%_{misses}$. They are less frequently accessed. They have higher capacity, associativity and block size.
+\end{itemize}
+
+\textit{Design Choice \#1:} \textbf{Unified} Cache (I\$ and D\$) or \textbf{Split} Cache. A \textit{Split Cache} minimizes structural hazards, but results in smaller, fixed capacities for both data and memory. A \textit{Unified Cache} results in fewer capacity misses since unused instruction capacity can be used for data. 
+
+\textit{Design Choice \#2:} \textbf{Inclusive} Memory or \textbf{Exclusive} Memory. In an \textit{Inclusive} design, a block in L1 is always in L2. In an \textit{Exclusive} design, a block is either in L1 or L2, never in both.
+\end{answered}
+
+\ 
+
+\item Hierarchy Performance
+\begin{answered}
+\begin{equation*}
+    t_{avg} = t_{avg-L1}
+\end{equation*}
+\begin{equation*}
+    t_{avg-L1} = t_{access-L1} + (\%_{misses-L1} \times t_{misses-L1})
+\end{equation*}
+\begin{equation*}
+    t_{avg-L1} = t_{access-L1} + (\%_{misses-L1} \times t_{avg-L2})
+\end{equation*}
+\begin{equation*}
+    t_{avg-L1} = t_{access-L1} + (\%_{misses-L1} \times (t_{access-L2} + (\%_{misses-L2} \times t_{misses-L2})))
+\end{equation*}
+
+\textit{and so on...}
+
+\ 
+
+\textbf{Note:} When calculating \textbf{miss rate}, there are two ways of performing this calculation (a) misses per instruction or (b) misses per cache access. Depending on the which approach you use, the percentage may vary. 
+
+Misses per instruction is a more straightforward approach and is synonymous to a \textit{global miss rate}. Misses per access is trickier and is a more \textit{local miss rate}. 
+
+\newpage 
+
+\textit{Multi-level Performance Calculation:}
+
+Let's say that a system has 30\% of it's instructions are memory operations. In the L1 cache, the $t_{access}=1$ cycle and $\%_{miss}=5\%$. In the L2 cache, the $t_{access}=10$ cycles and $\%_{miss}=20\%$. In the main memory $t_{access}=50$. What is the CPI of this system?
+
+Percentage of instruction misses in the L1 cache is : 30\% of 5\% $\implies$ 1.5\%.
+
+Percentage of instruction misses in the L2 cache is : 20\% of 1.5\% $\implies$ 0.3\%.
+
+\begin{equation*}
+    CPI = 1 + (1.5\% \times 10) + (0.3\% \times 50)
+\end{equation*}
+\begin{equation*}
+    CPI = 1 + 0.15 + 0.15 = 1.3
+\end{equation*}
 
 \end{answered}
 
