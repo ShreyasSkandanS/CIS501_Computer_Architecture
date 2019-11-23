@@ -300,6 +300,10 @@ This could introduce structural hazards and will require bypassing to avoid unne
 
 \quad There are two approaches to this: \textbf{Write-Through} and \textbf{Write-Back}. Modern systems will often use both of these techniques at different levels in memory. 
 
+\quad \textit{Q: Suppose on a STORE instruction, we wrote data into only the data cache (without changing main memory); then, after the write into the cache, memory would have a different value from that in the cache. In such a case, the cache and memory are said to be \textbf{inconsistent}. How can we fix this?}
+
+\quad \textit{Write-Through} : we maintain consistency by always writing the data into both the memory and the cache. \textit{Write-Back} or \textit{Copy-Back} : When a write occurs, the new value is written only to the block in the cache. The modified block is written to the lower level of the hierarchy when it is replaced. 
+
 \textbf{Write-Through:}
 \begin{itemize}
     \item This is the \textit{simplest approach}.
@@ -309,7 +313,7 @@ This could introduce structural hazards and will require bypassing to avoid unne
 
 \textbf{Write-Back:}
 \begin{itemize}
-    \item In this approach, a \textit{write} is propagated only when a block is replaced.
+    \item In this approach, a \textit{write} is propagated only when a block is replaced. This is useful when a processor generates writes faster than the writes can be handled by main memory.
     \item There is a \textbf{dirty bit} associated with each block.
     \item A \textbf{clean block} indicates that all occurrences of this value are consistent, and that there is another copy of this block somewhere. Therefore, evicting a clean block is more straightforward and easy to do.
     \item A \textbf{dirty block} is one that has been updated, meaning that there is a \textit{mismatch} across it's \textit{copies}. These are more challenging to handle.
@@ -375,8 +379,6 @@ Capacity misses are usually a result of poor spatial or temporal locality. \text
 \textbf{Loop blocking}: If accesses are spread out over time, you can exploit temporal locality to fetch and store a cache sized amount of data and more quickly access it. 
 \end{answered}
 
-\newpage 
-
 \item Designing a Cache Hierarchy
 \begin{answered}
 \vspace{-0.85cm}
@@ -431,7 +433,160 @@ Percentage of instruction misses in the L2 cache is : 20\% of 1.5\% $\implies$ 0
 \begin{equation*}
     CPI = 1 + 0.15 + 0.15 = 1.3
 \end{equation*}
+\end{answered}
+\end{QandA}
 
+\newpage 
+
+\section{Textbook Notes}
+
+\begin{QandA}
+
+\item Why do we care about good memory architectures?
+\begin{answered}
+All programs spend much of their time accessing memory and the memory system is necessarily a major factor in determining performance.
+\end{answered}
+
+\item What is the general idea behind having a memory hierarchy?
+\begin{answered}
+The goal is to present the user with as much memory (\textit{i.e size}) as is available in the cheapest technology, while providing access at the \textit{speed} offered by the fastest memory.
+
+\quad Faster memories are more expensive per bit than the slower memories and thus are smaller. The three primary technologies that are present in a hierarchy are \textit{SRAM}, \textit{DRAM} and \textit{Magnetic Disk / Flash}. 
+\end{answered}
+
+\item Glossary
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item \textbf{Block / Line:} The \textit{minimum unit of information} that can be either present or not present in a cache.
+    \item \textbf{Hit Rate:} The fraction of memory accesses \textit{found} in a level of the memory hierarchy.
+    \item \textbf{Miss Rate:} The fraction of memory accesses \textit{not found} in a level of the memory hierarchy.
+    \item \textbf{Hit Time:} The time required to access a level of the memory hierarchy, including the time needed to determine whether the access is a hit or a miss.
+    \item \textbf{Miss Penalty:} The time required to fetch a block into a level of the memory hierarchy from the lower level, including the time to access the block, transmit it from one level to the other, insert it in the level that experienced the miss, and then pass the block to the requester.
+\end{itemize}
+\end{answered}
+
+\item Ideal Scenario
+\begin{answered}
+If the \textit{hit rate} is high enough, the memory hierarchy has an effective access time close to that of the highest (and fastest) level and a size equal to that of the lowest (and largest) level.
+\end{answered}
+
+\item What is a \textit{True Hierarchy}?
+\begin{answered}
+In a true hierarchy, data cannot be present in level \textit{i} unless it is also present in level \textit{i+1}.
+\end{answered}
+
+\item What is a \textit{Direct Mapped Cache}?
+\begin{answered}
+If each word in memory can go to exactly one place in the cache, then it is straightforward to find the word if it is in the cache.
+\begin{equation*}
+    \text{location} = (\text{block address})\ \%\ (\text{number of blocks in the cache})
+\end{equation*}
+
+\textbf{But...}
+
+Because each cache location can contain the contents of a number of different memory locations, (\textit{i.e there is a many-to-one mapping}), how do we know whether the data in the cache corresponds to a requested word? \textbf{Tag bits!}
+
+\textbf{Tag Field:} A field in a table used for a memory hierarchy that contains the address information required to identify whether the associated block in the hierarchy corresponds to a requested word. 
+
+\textbf{Valid Bit:} A field in the tables of a memory hierarchy that indicates that the associate block in the hierarchy contains valid data.
+
+\textit{Q: When would a valid bit be required?}
+
+\quad Think of the situation when a processor first starts up. The cache does not have good data and the tag fields present are actually meaningless. Without the tag bits, we wouldn't be able to tell between random data and actually meaningful information. 
+\end{answered}
+
+\item Cache Miss
+\begin{answered}
+The processing of a cache miss creates a \textit{pipeline stall} as opposed to an interrupt, which would require saving the state of all the registers. 
+\end{answered}
+
+\item What are the two directions in which performance can be improved?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Reducing the \textit{miss rate} by reducing the probability that two different memory blocks will contend for the same cache location.
+    \item Reducing the \textit{miss penalty} by adding additional levels to the hierarchy - multi-level caching. 
+\end{itemize}
+\end{answered}
+
+\item A \textit{Write Buffer} is used in \textit{Write-Back} to improve performance. When does a \textit{Write Buffer} fail?
+\begin{answered}
+A \textit{Write Buffer} can stall when the buffer is full and if a write occurs. It is difficult to quantitatively analyze the exact penalty introduced by a write buffer stall. In a simple model, the stalls associated with the write buffer are ignored. 
+\end{answered}
+
+\item What is a \textit{Fully Associative Cache}?
+\begin{answered}
+A cache structure in which a block can be placed in any location in the cache. 
+
+\quad To find a given block in a fully associative cache, \textit{all the entries} in the cache must be searched because a block can be placed in any one. To make the search practical, it is done in parallel with a comparator associated with each cache entry. These comparators significantly \textit{increase the hardware cost}, effectively making fully associative placement practical only for caches with small number of blocks. 
+
+\textit{Note:} In a fully associative cache, there is effectively only one set, and all the blocks must be checked in parallel. Thus, there is no need for an \textit{index field} and the entire address (\textit{excluding offset}) is compared with the \textit{tag entry}. 
+
+\end{answered}
+
+\item What is a \textit{Set Associative Cache}?
+\begin{answered}
+A cache that has a fixed number of locations (\textit{at least two}) where each block can be placed. 
+
+\quad In a set-associative cache, there are a fixed number of locations where each block can be placed. A set-associative cache with \textit{n} locations for a block is called a \textit{n}-way set associative cache. An \textit{n}-way set-associative cache consists of a number of \textbf{sets}, each of which consists of \textit{n} blocks. Each block in the memory maps to a unique \textbf{set} in the cache. 
+\begin{equation*}
+    \text{location} = (\text{block address})\ \%\ (\text{number of \textit{sets} in the cache})
+\end{equation*}
+\vspace{-0.85cm}
+\end{answered}
+
+\item What happens when \textit{associativity} is increased?
+\begin{answered}
+This usually results in a decrease in miss rate. However, there is a potential increase in access time / hit time, so there is a \textit{tradeoff} to be made. 
+\end{answered}
+
+\item Where can blocks be placed?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{center}
+ \begin{tabular}{||c c c||} 
+ \hline
+ Scheme & Number of \textit{sets} & Blocks per \textit{set}\\ [0.5ex] 
+ \hline\hline
+ Direct Mapped & Number of blocks in cache & 1\\ 
+ \hline
+ Set Associative & $\frac{Number\ of\ blocks\ in\ cache}{Associativity}$ & Associativity\\
+ \hline
+ Fully Associative & 1 & Number of blocks in cache\\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+\end{answered}
+
+\newpage 
+
+\item How is a block found?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{center}
+ \begin{tabular}{||c c c||} 
+ \hline
+ Associativity & Location method & Comparisons required\\ [0.5ex] 
+ \hline\hline
+ Direct Mapped & Index bits & 1\\ 
+ \hline
+ Set Associative & Index set, \textit{search elements} & Associativity\\
+ \hline
+ Fully Associative & Search cache entries & Size of the cache\\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+\end{answered}
+
+\item What block is replaced during a \textit{miss}?
+\begin{answered}
+Typically, either the \textit{Least Recently Used (LRU)} or \textit{Not Most Recently Used (NMRU)}, i.e an approximation of LRU or just Random selection.
+\end{answered}
+
+\item How are writes handled?
+\begin{answered}
+Each level in the hierarchy can use either write-through or write-back. 
 \end{answered}
 
 \end{QandA}
