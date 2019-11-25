@@ -1,0 +1,142 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Superscalar (Multiple-Issue)}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+\item Parallelism
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item \textbf{Pipeline Level Parallelism (PLP):} Your program will work on the \textit{Execute Stage} of one instruction in parallel to working on the \textit{Decode Stage} of the next instruction.
+    \item \textbf{Instruction Level Parallelism (ILP):} Your program will have two \textit{independent} instructions working in parallel in the \textit{Execute Stage}. Here parallelism is exhibited \textit{within} a pipeline stage. 
+    \item \textbf{Data Level Parallelism (DLP):} A single instruction will process multiple data in parallel, for \textit{example:} one instruction results in 4 64-\textit{bit} ADD operations. This is seen in \textbf{GPUs}.
+    \item \textbf{Thread Level Parallelism (TLP):} Multiple software threads running at the same time on multiple different CPU cores. 
+\end{itemize}
+\end{answered}
+
+\item What is the \textit{Flynn Bottleneck}?
+\begin{answered}
+Even under ideal circumstances, there is a performance limit, i.e CPI = IPC = 1. And \textit{practically} speaking, this limit is never achieved because of all the different hazards and overheads that exist in hardware. 
+
+\quad We can try to \textit{super-pipeline} our design by adding more pipelined layers, but as we've seen before there is diminishing returns associated with this.
+\end{answered}
+
+\item What is the motivation behind \textit{Superscalar} design?
+\begin{answered}
+If we had two \textit{independent} instructions in sequence that in no way conflicted with each other, why not execute them \textit{both at the same time}?
+
+\quad We need to ensure that the two instructions are \textit{independent}. This involves \textit{dependency checking} of destination and source registers of the instructions. 
+\end{answered}
+
+\item How many instructions can you stack up?
+\begin{answered}
+Usually designs are approximately 4 instructions \textit{wide}. The benefits start to diminish quickly once you go beyond this range. 
+
+\quad However, certain designs will allow different stages of the pipeline to have different widths. We will be instead looking at \textit{uniform width superscalar designs}. 
+\end{answered}
+
+\item Overview
+\begin{answered}
+\vspace{-0.85cm}
+\begin{enumerate}
+    \item Fetch an entire block into cache since more than one instruction needs to be fetched at a time. This is usually 16B or 32B cache blocks resulting in 4 or 8 instructions being fetched at a time. Many of these instructions could be \textit{branch instructions}, but for simplicity we will assume \textbf{a single branch instruction per cycle}. 
+    \item Decoding of both instructions cannot happen completely in parallel since we need to \textit{check for conflicting instructions}, i.e the output register of instruction $I_{1}$ is an input register to $I_{2}$? Additionally, checks for \textit{load-to-use}, \textit{structual hazards} and \textit{bypassing} would be needed too.
+    \item The register file would need more ports - this means many more MUXes and more \textit{read} and \textit{write} ports.
+    \item More \textbf{ALUs} are required in the \textit{Execution Stage} - simple adders are easy but bypass paths are expensive.
+    \item The \textit{Memory Unit} is not doubled - this means that only a single \textit{load} instruction can be executed per cycle but this is ok. 
+\end{enumerate}
+\end{answered}
+
+\item Superscalar Implementation Challenges
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item We need to determine when instructions can proceed in parallel. This also requires \textbf{more complex stall logic} - order \textbf{$N^{2}$} for an $N-wide$ machine. 
+    \item For superscalar \textit{Register Read}, we would need 2 read ports per $N-width$, i.e a 4-wide machine would require 8 read ports. \textbf{Quadratic scaling} in the number of ports. 
+    \begin{equation*}
+        \text{Latency}\ \textit{and}\ \text{Area}\ \propto\ \text{Number of ports}^{2}
+    \end{equation*}
+    \item We require more complex bypassing since there are more possible sources for data values. It is \textbf{Order$(N^{2} \times P)$} for $N-wide$ machines with pipeline depth $P$. This is clearly \textit{expensive} to scale. 
+\end{itemize}
+\end{answered}
+
+\item Superscalar Bypass and Register Files 
+\begin{answered}
+For an $N-wide$ machine, you would ideally need an $N^{2}$ bypass network with $(N+1)$ input muxes at each ALU input and $N^{2}$ point-to-point connections. And this is just one \textbf{MX} bypass - we need to also do this for \textbf{WX} bypassing. 
+
+\ 
+
+\textit{Q: Which is worse, $N^{2}$ bypassing or $N^{2}$ stalling?}
+
+\quad $N^{2}$ bypassing is far worse since the values are much larger (64-bit quantities instead of 5-bit quantities). There are multiple levels of bypassing (MX, WX, etc.).
+
+\ 
+
+\textit{Q: How can you mitigate the $N^{2}$ bypassing?}
+
+\quad \textbf{Clustering} - group ALUs into \textbf{K} clusters. Within each cluster provide full bypassing and limited bypassing between clusters. This constraining of the connections gives up arbitrary bypassing by typical cases will be much faster. We can also take advantage of the full bypassing between a cluster by \textbf{Steering} dependent instructions to the same cluster. 
+
+\quad From $(N+1)$ inputs it is now $(\frac{N}{K}+1)$. Instead of $N^{2}$ bypass paths, it is now $(\frac{N}{K})^{2}$ bypass paths. 
+
+\ 
+
+\textit{Q: What about Register Files?}
+
+\quad We can replicate a register file per cluster. This causes some additional complexity since there are now two copies in each register. But we can design the system such that \textit{register writes} update all the replicas. Ideally, we design systems with \textit{more read ports} than \textit{write ports} and this allows us to cut down on \textit{read ports} by reducing the number of read ports from $2N$ to $\frac{2 \times N}{K}$.
+
+\end{answered}
+
+\newpage 
+
+\item How do we improve Superscalar Fetching?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item \textbf{Over-Fetch and Buffer} - add a queue between \textit{Fetch Stage} and the \textit{Decode Stage}. This compensates for cycles that fetch less than maximum instructions. \textit{Fetch} and \textit{Decode} are at different rates allowing for smoother execution.
+    \item \textbf{Loop Stream Detector} - Special pattern detector to identify and process loops that is very fast.
+\end{itemize}
+\end{answered}
+
+\item Superscalar Implementations
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Statically Scheduled (in-order) Superscalar - \textit{unmodified sequential programs}
+    \item Very Long Instruction Word (VLIW) - \textit{compiler identifies independent instructions}. This is good because you don't need to do any dependency checking, no bypassing, move all burden to the compiler. If the compiler cannot identify such instructions, a \textit{no-op} is inserted.
+    \item Dynamically Scheduled Superscalar - \textit{hardware extracts more ILP by re-ordering} - Out of order execution. It is more complicated but is very popular now. 
+\end{itemize}
+\end{answered}
+
+\item Performance
+\begin{answered}
+\begin{equation*}
+    CPI_{base-superscalar} = \frac{1}{\textit{Superscalar Width}}
+\end{equation*}
+\end{answered}
+
+\end{QandA}
+
+\end{document}
