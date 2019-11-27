@@ -1,0 +1,104 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Out-of-Order \\ (Dynamic Scheduling)}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+\item Why do we need \textit{code scheduling} and what are the \textit{two ways} of doing it?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item We can't really avoid \textbf{load-to-use} delays in the designs that we have looked at so far. But what if we could \textbf{fill} those delay slots with instructions that are \textit{independent} of it? This way we can \textit{increase CPI} and \textit{increase ILP}. 
+    \item \textbf{Static Scheduling:} at \textit{compile} time, done by software. 
+    \item \textbf{Dynamic Scheduling:} at \textit{run} time, done by hardware.
+    \item We will be primarily looking at \textit{dynamic scheduling}; a process that creates more opportunities to schedule things in parallel by moving independent instructions around. This is very common today and exists on cellphones, laptops, etc.
+\end{itemize}
+\end{answered}
+
+\item Static Scheduling
+%\vspace{-0.85cm}
+\begin{answered}
+Some key characteristics / criteria to properly perform \textit{static scheduling} are listed below. These must be taken care of at \textit{compile time}. 
+\begin{itemize}
+    \item \textbf{Scheduling Scope:} Ideally we want a larger scope because if the scope is too small there's nothing that the compiler can do to improve performance. It cannot rearrange and re-order instructions if it doesn't see enough instructions. \textit{Branch Instructions} specifically can cause problems with scheduling scope because it is impossible to move memory operations past branch instructions. 
+    \item \textbf{Registers:} We need a sufficient amount of registers to hold all \textit{"live"} values. But we are limited by the ISA in how many registers are available to us. 
+    \item \textbf{Alias Analysis:} We need to be able to tell whether a LOAD/STORE instruction reference the \textit{same memory locations}. This is often difficult for the compiler to do and prevents reordering of loads above stores. 
+\end{itemize}
+
+However, there are situations where \textit{Static Scheduling} works really well such as in \textbf{SAXPY} (Single-precision AX Plus Y). Since all loop iterations are independent - loop unrolling. Alias analysis is tractable. Limited registers are still a challenge. 
+\end{answered}
+
+\item Dynamic Scheduling
+\begin{answered}
+In this variant, the \textit{hardware} is responsible for the re-scheduling of instructions. The key motivations and criteria are similar to the ones mentioned above. We need to increase \textit{scheduling scope} and we can use \textit{branch prediction} to unroll branches. The benefit of this approach is that everything happens under the hood and the software layers are not exposed to any of the inner mechanisms. 
+
+The \textbf{Out-of-Order Pipeline} can be divided into the following modules
+\begin{itemize}
+    \item \textbf{In-Order} Front End - Fetch, Decode, Rename, Dispatch
+    \item \textbf{Out-of-Order} Execution - Buffer of Instruction $\rightarrow$ \{ Issue, Register Read, Execute, Write-back \} 
+    \item \textbf{In-Order} Commit - Commit 
+\end{itemize}
+
+Programs will enter \textit{in-order} and exit \textit{in-order}, maintaining the illusion of sequential program execution. But between the \textit{Dispatch} and \textit{Commit} stages, the instructions can be processed out of order and hence we can reap the benefits of an out-of-order design while maintaining a final sequential ordering. 
+
+\textbf{Dependency Types:}
+\begin{itemize}
+    \item \textbf{RAW} (Read After Write) - \textit{True Dependence}
+    \item \textbf{WAW} (Write After Write) - \textit{False Dependence}
+    \item \textbf{WAR} (Write After Read) - \textit{False Dependence}
+\end{itemize}
+
+Both \textbf{WAW} and \textbf{WAR} are \textit{False} dependencies and can be eliminated completely by \textit{Register Renaming}. The \textit{True} dependency \textbf{RAW} is enforced by the final \textit{Dynamic Scheduling}. 
+\end{answered}
+
+\item Part 1: Register Renaming
+\begin{answered}
+To understand the \textit{Register Renaming} algorithm, the following new ideas are required:
+
+\textit{Q: What is the difference between architectural registers and physical registers?}
+
+\quad In an ISA such as LC4, we have registers $R0...R8$. These are actually indirections / pointers to actual physical registers which are more than 8 in number. The pointers to the physical register locations are called \textit{architectural registers} and the actual physical locations are \textit{physical registers}.
+\begin{equation*}
+    \#\text{physical registers} > \#\text{architectural registers}
+\end{equation*}
+
+\textit{Q: What are the additional hardware structures required for register renaming?}
+
+\quad The first is a \textbf{Map Table}, which maintains the mapping from \textit{architectural registers} to the \textit{physical registers}. The second is a \textbf{Free List}, which maintains the list of available registers (in a queue). 
+
+\textit{Q: What is the goal of the Register Renaming algorithm?}
+
+\quad The goal is to \textit{eliminate contention} / \textit{eliminate false dependencies}. 
+\end{answered}
+
+\item Part 2: Dynamic Scheduling
+\begin{answered}
+
+\end{answered}
+
+
+\end{QandA}
+
+\end{document}
