@@ -95,6 +95,32 @@ To understand the \textit{Register Renaming} algorithm, the following new ideas 
 
 \item Part 2: Dynamic Scheduling
 \begin{answered}
+The previous \textit{register renaming} happened in-order, and the instructions then move onto the actual dynamic scheduling, i.e when the instructions no longer follow the program order. By this stage, all the \textit{False Dependencies} have been removed and only \textit{True Dependencies} remain. 
+
+The instructions from the previous stage are put into a \textbf{Instruction Buffer} or \textit{Instruction Window} / \textit{Instruction Scheduler}. 
+
+Additionally, there is another hardware structure called the \textbf{Ready Table} which maintains whether an instruction is \textit{ready} or not, and then executes the oldest \textit{ready} instruction. The ready-ness of the instruction is maintained by a single \textbf{Ready-Bit}. 
+
+\textit{Q: Why give preference to the oldest instruction?}
+
+\quad Old instructions will produce things that more instructions may depend on. By processing older instructions first we also guarantee that \textit{progress} will be made. 
+
+The other key pieces of hardware are the \textbf{Issue Queue}, which is the \textit{central piece} of scheduling logic. It holds the instructions from the \textit{Dispatch Stage} to the \textit{Issue Stage}. It tracks \text{Ready} inputs as well as their \textit{Birthday} to indicate how old each instruction is. 
+
+\textit{Q: Why maintain birthday instead of age?}
+
+\quad Age changes over time but birthday remains consistent and is hence easier to maintain. 
+
+\textit{Note:} The Issue Queue is not \textit{read} in program order which means that the structure itself contains instructions not in program order. This is technically not a \textit{queue} by the proper definition and works more like an Issue Table. 
+
+The next piece of hardware is the \textbf{Re-order Buffer (ROB)}, which holds the instructions from the \textit{Fetch Stage} through to the \textit{Commit Stage}. 
+
+In summary:
+\begin{itemize}
+    \item The \textit{Dispatch Stage} fills up the \textit{Issue Queue} and the \textit{Issue Stage} involves figuring out which instructions in the \textit{Issue Queue} are ready and can leave the queue to go onto the next stage.
+    \item This involves \textbf{Selecting} ready instructions that can leave and \textbf{Waking Up} dependent instructions. This \textit{search} and \textit{wake-up} is done using Content Addressable Memory (CAM).
+\end{itemize}  
+
 
 \end{answered}
 
