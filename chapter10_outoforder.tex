@@ -120,8 +120,59 @@ In summary:
     \item The \textit{Dispatch Stage} fills up the \textit{Issue Queue} and the \textit{Issue Stage} involves figuring out which instructions in the \textit{Issue Queue} are ready and can leave the queue to go onto the next stage.
     \item This involves \textbf{Selecting} ready instructions that can leave and \textbf{Waking Up} dependent instructions. This \textit{search} and \textit{wake-up} is done using Content Addressable Memory (CAM).
 \end{itemize}  
+\end{answered}
 
+\item Register Renaming - Continued
+\begin{answered}
+In the previous description of the \textit{register renaming} algorithm, once a register was overwritten it was \textit{discarded}. But in reality, there is a finite number of these registers and they need to be \textbf{reused}. We can do this by \textit{tracking / logging} the overwritten registers in the \textbf{Re-Order Buffer} (ROB) and then we can \textbf{free} them after the \textbf{Commit} stage. 
 
+\quad The only change to the algorithm is that we need to keep track of the overwritten register before updating the \textit{MapTable} with the new register. Once the instruction is finished at the \textit{Commit Stage}, we can \textbf{free} that register. 
+
+\textbf{Re-Order Buffer (ROB):}
+
+\begin{itemize}
+    \item Holds all the information for \textit{recovery} and \textit{commit}.
+    \item This information is not removed until the very last \textit{commit}.
+    \item Helps track instructions for an in-order \textit{commit}.
+    \item Useful in freeing up physical registers.
+    \item Useful in recovering from mis-predictions. 
+\end{itemize}
+
+\textbf{Recovery:}
+
+Everything that leaves the \textit{Commit Stage} \textbf{must be} correct. This implies that up-to the \textit{Commit Stage}, we are free to use any method of speculation and guessing, but once an instruction leaves the \textit{Commit Stage}, it affects the system permanently. This also gives us the opportunity to \textbf{recover} from mis-speculations prior to the \textit{Commit Stage}. This involves completely removing the wrong path instructions, i.e rewinding all the changed state in the system. This can be done the following ways:
+\begin{itemize}
+    \item Log-based Reverse Renaming - \textit{track old mapping; slow}
+    \item Checkpoint-based Recovery - \textit{checkpoint MapTable and free list; more state}
+    \item Hybrid - \textit{combination of both}
+\end{itemize}
+
+\textit{Note:} At the \textit{Commit Stage} the instruction becomes \textbf{Architected State}. This means that we've really made the changes and instruction has really happened. 
+
+\textit{Q: Why is it safe to free an overwritten register?}
+
+\quad It is safe because any instruction that requires it's value should read the new updated value and not the value that was overwritten. 
+\end{answered}
+
+\item Dynamic Scheduling - Continued
+\begin{answered}
+To recap, the \textit{Issue Queue} holds all waiting (un-executed) instructions. The \textit{Issue Queue} also holds ready/not-ready status of all the source registers for each instruction. 
+
+\textit{Note:} The \textbf{Di} stage is a combination of \textit{Decode, Rename} and \textit{Dispatch}. 
+
+The different hardware structures necessary to make this function smoothly are:
+\begin{itemize}
+    \item Map Table
+    \item Ready Table
+    \item Re-Order Buffer
+    \item Issue Queue
+\end{itemize}
+
+Once a register is overwritten, it is placed in the \textbf{Re-Order Buffer} to indicate that it can be released / free-d once the instruction is complete, i.e once the instruction leaves the \textit{Commit Stage}. 
+
+\textit{Q: Where do instructions wait?}
+
+\quad In \textbf{In-Order} execution, instructions usually waited in the \textit{Decode Stage}. In \textbf{Out-of-Order} execution, they will need to wait too, but they can wait in more than one place such as the \textbf{Re-Order Buffer} and the \textbf{Issue Queue}. Instructions that are stalled after the \textit{Di Stage} are usually \textit{hanging out} in the \textbf{Issue Queue}.
 \end{answered}
 
 
