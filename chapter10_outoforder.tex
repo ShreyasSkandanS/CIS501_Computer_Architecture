@@ -16,7 +16,7 @@
                       {\end{enumerate}}
 \newenvironment{answered}{\par\quad\normalfont}{}
 
-\title{CIS501: Out-of-Order \\ (Dynamic Scheduling)}
+\title{CIS501: Out-of-Order \\ \textit{(Dynamic Scheduling)}}
 \author[1]{Shreyas S. Shivakumar}
 
 \begin{document}
@@ -37,6 +37,8 @@
 \end{itemize}
 \end{answered}
 
+\ 
+
 \item Static Scheduling
 %\vspace{-0.85cm}
 \begin{answered}
@@ -49,6 +51,8 @@ Some key characteristics / criteria to properly perform \textit{static schedulin
 
 However, there are situations where \textit{Static Scheduling} works really well such as in \textbf{SAXPY} (Single-precision AX Plus Y). Since all loop iterations are independent - loop unrolling. Alias analysis is tractable. Limited registers are still a challenge. 
 \end{answered}
+
+\ 
 
 \item Dynamic Scheduling
 \begin{answered}
@@ -73,6 +77,8 @@ Programs will enter \textit{in-order} and exit \textit{in-order}, maintaining th
 Both \textbf{WAW} and \textbf{WAR} are \textit{False} dependencies and can be eliminated completely by \textit{Register Renaming}. The \textit{True} dependency \textbf{RAW} is enforced by the final \textit{Dynamic Scheduling}. 
 \end{answered}
 
+\ 
+
 \item Part 1: Register Renaming
 \begin{answered}
 To understand the \textit{Register Renaming} algorithm, the following new ideas are required:
@@ -92,6 +98,8 @@ To understand the \textit{Register Renaming} algorithm, the following new ideas 
 
 \quad The goal is to \textit{eliminate contention} / \textit{eliminate false dependencies}. 
 \end{answered}
+
+\ 
 
 \item Part 2: Dynamic Scheduling
 \begin{answered}
@@ -121,6 +129,8 @@ In summary:
     \item This involves \textbf{Selecting} ready instructions that can leave and \textbf{Waking Up} dependent instructions. This \textit{search} and \textit{wake-up} is done using Content Addressable Memory (CAM).
 \end{itemize}  
 \end{answered}
+
+\ 
 
 \item Register Renaming - Continued
 \begin{answered}
@@ -154,6 +164,8 @@ Everything that leaves the \textit{Commit Stage} \textbf{must be} correct. This 
 \quad It is safe because any instruction that requires it's value should read the new updated value and not the value that was overwritten. 
 \end{answered}
 
+\ 
+
 \item Dynamic Scheduling - Continued
 \begin{answered}
 To recap, the \textit{Issue Queue} holds all waiting (un-executed) instructions. The \textit{Issue Queue} also holds ready/not-ready status of all the source registers for each instruction. 
@@ -173,6 +185,161 @@ Once a register is overwritten, it is placed in the \textbf{Re-Order Buffer} to 
 \textit{Q: Where do instructions wait?}
 
 \quad In \textbf{In-Order} execution, instructions usually waited in the \textit{Decode Stage}. In \textbf{Out-of-Order} execution, they will need to wait too, but they can wait in more than one place such as the \textbf{Re-Order Buffer} and the \textbf{Issue Queue}. Instructions that are stalled after the \textit{Di Stage} are usually \textit{hanging out} in the \textbf{Issue Queue}.
+\end{answered}
+
+\newpage 
+
+\item Memory Operations
+\begin{answered}
+So far, we have primarily looked at \textit{read} operations that use registers. What happens when we perform memory operations such as \textit{load} and \textit{store} where the actual contents of the memory are changing? 
+
+As before, the types of dependencies are the same - \textbf{WAW} and \textbf{WAR} are \textit{False} dependencies and should be eliminated. \textbf{RAW} is a \textit{True} dependency and has to be enforced. 
+
+\textbf{Problem:} The overall challenge is that we can't rename memory the same way that we did with registers because \textit{memory addresses are \textbf{not known} at the Rename Stage}. 
+\end{answered}
+
+\ 
+
+\item Store Instructions
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Let's look at \textit{\textbf{only} store} instructions and ignore \textit{load} instructions for now.
+    \item Store instructions write to data cache and not registers so we cannot use the \textit{register renaming} algorithm that we've seen previously. 
+    \item Writing to the data cache is unrecoverable so we must be careful about what we finally write to the data cache - do it only when certain; at the \textit{Commit Stage}. 
+    \item \textit{Thoughts:} Maybe put the \textit{store} instructions somewhere else?
+\end{itemize}
+
+Consider the following sequence of instructions:
+\begin{center}
+\begin{tabular}{ |c| } 
+ \hline
+ MUL P1 $\times$ P2 $\rightarrow$ P3 \\ 
+ JNZ P3 \\ 
+ STR P5 $\rightarrow$ [P3+4] \\
+ STR P4 $\rightarrow$ [P6+8] \\
+ \hline
+\end{tabular}
+\end{center}
+
+\textit{Q: \textbf{Out-of-Order Stores} - What if $P3+4==P6+8$?}
+
+\quad The two store instructions will write to the same address (WAW dependency : structural hazard). And we won't know this until the \textit{Execute Stage} because that is when the memory addresses are actually known. \textbf{Na\"ive Solution:} All stores execute in order. 
+
+\textit{Q: \textbf{Branch Mis-prediction} - What if the JNZ instruction is mis-predicted?}
+
+\quad We require a degree of speculation to handle branch instructions efficiently and usually on mis-speculation we can go back and re-wind to the previous steady state. But here we would have written to the \textit{data cache}, and this cannot be \textit{undone}. In this case, what if the $4^{th}$ instruction proceeded out of order (since it is independent) but then the $2^{nd}$ instruction was mis-predicted. We would need to undo the $4^{th}$ instruction. 
+\end{answered}
+
+\ 
+
+\item Store Queue
+\begin{answered}
+We add another hardware structure called the \textit{Store Queue} that can solve the above two problems.
+\begin{itemize}
+    \item At the \textit{Dispatch Stage}, each \textit{store} instruction is given a slot in the \textit{Store Queue} and it is a FIFO queue.
+    \item At the \textit{Commit Stage}, the value is read from the \textit{Store Queue} and written into the data cache.
+    \item To facilitate recovery from mis-speculation, we can remove entries from the \textit{store queue}. 
+    \item By introducing the \textit{Store Queue}, store instructions don't interact with the \textit{Memory Stage} at all and go to the SQ and then it is eventually committed.
+\end{itemize}
+\end{answered}
+
+\ 
+
+\item Memory Forwarding
+\begin{answered}
+\textit{Q: What if \textbf{load} instructions were thrown into the mix?}
+
+Consider the following sequence of instructions:
+\begin{center}
+\begin{tabular}{ |c| } 
+ \hline
+ FDIV P1 \/ P2 $\rightarrow$ P9 \\ 
+ STR P4 $\rightarrow$ [P5+4] \\
+ STR P3 $\rightarrow$ [P6+8] \\
+ LDR [P7] $\rightarrow$ P8 \\
+ \hline
+\end{tabular}
+\end{center}
+
+\textit{Q: Can LDR [P7] $\rightarrow$ P8 issue and begin executing?}
+
+\quad Since the \textit{load} instruction could depend on the second \textit{store} instruction above, the \textit{store} instruction might not have written it's value to the data cache yet. But since the value is already ready, we should be able to pass the value to the \textit{load} instruction such as in bypassing. This is \textbf{memory forwarding}.
+
+For the \textit{load} instruction to get the correct value, it must also search the \textit{Store Queue} in parallel with the data cache. This is different from regular \textit{register bypassing} because here we will not know the addresses until the \textit{Execute Stage}. 
+\end{answered}
+
+\
+
+\item YOMS: Youngest Older Matching Store Policy
+\begin{answered}
+Consider the following sequence of instructions:
+\begin{center}
+\begin{tabular}{ |c| } 
+ \hline
+ MUL P1 $\times$ P2 $\rightarrow$ P3 \\ 
+ JNZ P3 \\ 
+ LDR [P3+4] $\rightarrow$ P5 \\
+ STR P4 $\rightarrow$ [P6+8] \\
+ \hline
+\end{tabular}
+\end{center}
+
+If the $4^{th}$ instruction runs before the $3^{rd}$ instruction and if $P3+4==P6+8$ we need to ensure that the value that the \textit{load} instruction reads is not the value that was written by the \textit{store} instruction. 
+
+\textbf{Solution:} Add an \textit{age / birthday} field to the \textit{Store Queue} entries. \textit{Load} instructions must then read from the \textbf{youngest older matching store}. 
+
+In essence, we are preventing instructions from seeing values from the \textit{future}. 
+\end{answered}
+
+\
+
+\item Load Scheduling
+\begin{answered}
+Consider the following sequence of instructions:
+\begin{center}
+\begin{tabular}{ |c| } 
+ \hline
+ MUL P1 $\times$ P2 $\rightarrow$ P3 \\ 
+ JNZ P3 \\ 
+ LDR [P3+4] $\rightarrow$ P5 \\
+ STR P4 $\rightarrow$ [P6+8] \\
+ \hline
+\end{tabular}
+\end{center}
+
+If $P3+4==P6+8$, the \textit{load} instruction should get the value from the \textit{store} instruction as we've seen in the YOMS example above. \textbf{But}, the value isn't put into the \textit{Store Queue} until the store instruction has finished it's \textit{Execute Stage}. This is a \textbf{problem}. 
+
+\textbf{Na\"ive Solution:} All loads must wait for all earlier stores. This is called \textbf{Conservative Load Scheduling}. This option is \textit{always safe} but comes at the cost of performance. 
+
+\textit{Q: What is a better alternative to this?}
+
+\quad Let the \textit{load} instruction do the best it can by speculation. If it is wrong, we can figure out a way to fix things. But if it is correct, we have achieved performance gains. This is called \textbf{Optimistic Load Scheduling} or \textbf{Load Speculation}.
+
+\begin{itemize}
+    \item \textit{Q: When do we speculate?} On every load!
+    \item \textit{Q: How do we detect a mis-speculation?} The Store Queue can be used by the load instruction so we can check for any load instruction that ran too soon - this is done by a new piece of hardware called the \textbf{Load Queue}. 
+    \item \textit{Q: How do we recover?} Squash offending load instructions and all newer instructions. The penalty here is high but it is still worth it!
+\end{itemize}
+
+\textbf{Load Queue:}
+
+\begin{itemize}
+    \item Detects load ordering violations
+    \item \textit{Load Instructions:} when a load executes, write it's address into the \textit{Load Queue}.
+    \item \textit{Store Instructions:} when a store executes, search the \textit{Load Queue}. 
+\end{itemize}
+
+\textbf{Load Queue vs Store Queue:}
+\begin{itemize}
+    \item Store Queue handles forwarding and allows out-of-order stores.
+    \item Load Queue handles the detection of load ordering violations.
+    \item Together they allow for aggressive load scheduling.
+\end{itemize}
+
+When this works, it \textit{increases performance} and \textit{increases ILP}. When there is a conflict the performance is worse than just waiting. The next improvement is to \textbf{avoid squashes} by predictive load scheduling. Here a PC based predictor can be used or some algorithms make predictions over sets of instructions for such dependencies. 
+
+
 \end{answered}
 
 
