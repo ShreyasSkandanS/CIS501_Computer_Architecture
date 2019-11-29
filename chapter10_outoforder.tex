@@ -338,11 +338,47 @@ If $P3+4==P6+8$, the \textit{load} instruction should get the value from the \te
 \end{itemize}
 
 When this works, it \textit{increases performance} and \textit{increases ILP}. When there is a conflict the performance is worse than just waiting. The next improvement is to \textbf{avoid squashes} by predictive load scheduling. Here a PC based predictor can be used or some algorithms make predictions over sets of instructions for such dependencies. 
-
-
 \end{answered}
-
-
 \end{QandA}
 
+\newpage 
+
+\section{Textbook Notes}
+
+\begin{QandA}
+\item Register Renaming
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item The goal is to eliminate dependencies that are not \textit{true} data dependencies (also called \textit{anti-dependencies}), but could either lead to potential hazards or prevent the compiler from flexibly scheduling code.
+    \item Renaming registers during the unrolling process allows the compiler to move these independent instructions subsequently so as to better schedule code.
+\end{itemize}
+\end{answered}
+
+\item Dynamic Scheduling
+\begin{answered}
+Dynamic scheduling chooses which instructions to execute in a given clock cycle while trying to avoid hazards and stalls. 
+
+\textit{Definition:} Hardware support for reordering the order of instruction execution so as to avoid stalls. 
+
+Conceptually, this can be thought of as the process of analyzing the data flow of a program and then executing the instructions in some order that preserves the data flow order of the program while minimizing overall stall cycles. 
+
+Dynamic Scheduling is often extended by including hardware-based speculation, especially for branch outcomes. A speculation on load addresses allows load-store re-ordering as well, using the \textit{Commit Stage} to avoid incorrect speculations from propagating to the programmer-visible registers and memory. 
+\end{answered}
+
+\item Commit Unit
+\begin{answered}
+The unit in a dynamic or out-of-order execution pipeline that decides when it is safe to release the result of an operation to programmer-visible registers and memory.
+\end{answered}
+
+\item Re-order Buffer (ROB)
+\begin{answered}
+The buffer that holds results in a dynamically scheduled processor until it is safe to store the results to memory of a register. 
+\end{answered}
+
+\item Power Efficiency
+\begin{answered}
+The downside to increasing exploitation of instruction-level parallelism via dynamic multiple issue and speculation is power efficiency. 
+\end{answered}
+\end{QandA}
 \end{document}
