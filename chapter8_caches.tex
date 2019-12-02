@@ -78,6 +78,8 @@ Level & Memory Type & Managed By \\
 
 \end{answered}
 
+\ 
+
 \item Locality
 \begin{answered}
 A key strategy in improving memory performance is \textit{Locality}. 
@@ -86,6 +88,8 @@ A key strategy in improving memory performance is \textit{Locality}.
     \item \textbf{Temporal Locality:} if a program recently referenced data, it is likely to refer to that data \textit{again} soon. To improve performance, we can \textbf{reactively} "cache" this data in small, fast memory so that the program can use it again quickly. \textit{Example:} counter variables.
 \end{itemize}
 \end{answered}
+
+\ 
 
 \item Cache Overview
 \begin{answered}
@@ -118,12 +122,16 @@ A key strategy in improving memory performance is \textit{Locality}.
 \end{itemize}
 \end{answered}
 
+\ 
+
 \item Cache Miss
 \begin{answered}
 \textit{What if the data that was requested isn't in the cache? Who handles this?}
 
 A \textbf{Cache Controller} is a finite state machine that is responsible for remembering the address of data that resulted in a \textit{cache miss}. It accesses the next level of memory in order to acquire the necessary data. It must wait until it receives a response and then must write the required information and tags into the proper location in the cache. 
 \end{answered}
+
+\ 
 
 \item Glossary
 \begin{answered}
@@ -139,6 +147,8 @@ A \textbf{Cache Controller} is a finite state machine that is responsible for re
 \end{itemize}
 \textit{Note:} A \textbf{Fill} usually also entails the costs involved in \textit{evicting} data that was already in the cache to make room for the new data that is incoming. 
 \end{answered}
+
+\ 
 
 \item Performance Equation
 \begin{answered}
@@ -191,6 +201,8 @@ As we have noticed, increasing the size of the cache doesn't necessarily result 
 \end{enumerate}
 \end{answered}
 
+\ 
+
 \item Increasing Block Size
 \begin{answered}
 This seems valid and is directly tied to the notion of \textit{spatial locality}. 
@@ -220,6 +232,8 @@ This seems valid and is directly tied to the notion of \textit{spatial locality}
 \quad Technically, since the blocks are larger, they should take longer to \textbf{read, transfer} and \textbf{fill}. However, if you use \textbf{Critical World First (or) Early Restart} you can avoid this effect on isolated misses. This technique allows for the requested word to be fetched first and the remaining words are filled in the background. This will not, however, improve the situation where a cluster of misses occurs as this will turn into a \textit{bandwidth problem} under those circumstances. 
 
 \end{answered}
+
+\ 
 
 \item Associativity
 
@@ -254,8 +268,6 @@ In a \textbf{Fully Associative Cache}, the memory block 12 can appear in any of 
 
 \
 
-\newpage 
-
 \textbf{Replacement Policies}
 
 With N-Way Associative Caches, what happens during a \textit{Cache Miss}? Which block in a set should be evicted?
@@ -276,6 +288,8 @@ With N-Way Associative Caches, what happens during a \textit{Cache Miss}? Which 
 \quad No it does not!
 \end{answered}
 
+\ 
+
 \item Caches and Stores
 \begin{answered}
 Everything we have talked about so far has been in the context of reading from the cache, such as during a LOAD instruction. What about \textit{STORE} instructions that write to the cache?
@@ -294,6 +308,8 @@ Everything we have talked about so far has been in the context of reading from t
 This could introduce structural hazards and will require bypassing to avoid unnecessary stalls.
 \end{answered}
 
+\ 
+
 \item Propagating Writes
 \begin{answered}
 \textit{Q: Since lower levels of memory (basically the entire memory hierarchy) need to be updated by write instructions, when should you propagate these updated values?}
@@ -303,6 +319,8 @@ This could introduce structural hazards and will require bypassing to avoid unne
 \quad \textit{Q: Suppose on a STORE instruction, we wrote data into only the data cache (without changing main memory); then, after the write into the cache, memory would have a different value from that in the cache. In such a case, the cache and memory are said to be \textbf{inconsistent}. How can we fix this?}
 
 \quad \textit{Write-Through} : we maintain consistency by always writing the data into both the memory and the cache. \textit{Write-Back} or \textit{Copy-Back} : When a write occurs, the new value is written only to the block in the cache. The modified block is written to the lower level of the hierarchy when it is replaced. 
+
+\ 
 
 \textbf{Write-Through:}
 \begin{itemize}
@@ -352,6 +370,8 @@ Next we will see how \textit{write misses} are actually handled and some optimiz
 \end{itemize}
 \end{answered}
 
+\ 
+
 \item What is a way of reducing Conflict Misses?
 \begin{answered}
 Conflict Misses occur as a result of insufficient associativity. Adding more associativity to the cache is \textit{expensive} and rarely needed. But what if you could get \textit{associativity on demand} if/when you actually need it? This is what a \textbf{Victim Buffer (VB)} will provide.
@@ -378,6 +398,8 @@ Capacity misses are usually a result of poor spatial or temporal locality. \text
 
 \textbf{Loop blocking}: If accesses are spread out over time, you can exploit temporal locality to fetch and store a cache sized amount of data and more quickly access it. 
 \end{answered}
+
+\ 
 
 \item Designing a Cache Hierarchy
 \begin{answered}
@@ -417,7 +439,7 @@ Capacity misses are usually a result of poor spatial or temporal locality. \text
 
 Misses per instruction is a more straightforward approach and is synonymous to a \textit{global miss rate}. Misses per access is trickier and is a more \textit{local miss rate}. 
 
-\newpage 
+\ 
 
 \textit{Multi-level Performance Calculation:}
 

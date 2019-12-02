@@ -33,6 +33,8 @@
     \qquad\textbf{Branch Prediction} is how we will attempt to solve this problem. Branch Prediction cannot however fix all cases of failure related to control hazards. 
 \end{answered}
 
+\ 
+
 \item What are the challenges with Branch instructions?
 \vspace{-0.85cm}
 \begin{answered}
@@ -47,10 +49,14 @@
 \end{itemize}
 \end{answered}
 
+\
+
 \item How do we then fix this problem?
 \begin{answered}
     We can just \textbf{guess}. In our previous approach of handling \textit{data hazards}, we would try to identify a problem early on and make arrangements to avoid that problem or minimize it's effects on the system. However, with \textit{control hazards}, we take a different approach because \textbf{waiting/stalling} is too expensive. We instead \textbf{guess}, and hope to make a \textbf{smart guess}. This does not guarantee that we are always correct, so when we are wrong we must ensure there are mechanisms in place to clean up behind us. This is the idea behind \textbf{Speculative Execution}.
 \end{answered}
+
+\ 
 
 \item Speculative Execution
 \vspace{-0.85cm}
@@ -61,6 +67,8 @@
     \item If your speculation is \textit{incorrect} (mis-speculation), you have to fix what you broke by flushing all incorrect instructions and undo all incorrect changes, going back to the original state
 \end{itemize}
 \end{answered}
+
+\ 
 
 \item Control Speculation
 \begin{answered}
@@ -74,6 +82,8 @@
     
     According to this, what we've been doing so far is also technically \textit{speculation}, except we guessed that the next \textbf{PC} would always be \textbf{PC + 4}.
 \end{answered}
+
+\ 
 
 \item At what stage should we perform Branch Prediction?
 \begin{answered}
@@ -105,6 +115,8 @@
     
     Realistically, we don't really know anything about the instruction during the \textit{Fetch Stage}. But we will design mechanisms that will make this possible.
 \end{answered}
+
+\ 
 
 \item Branch Recovery
 \begin{answered}
@@ -144,6 +156,8 @@
     \end{center}       
 \end{answered}
 
+\newpage 
+
 \item Branch Performance
 \begin{answered}
     Instructions are Branch: 20\%, Load: 20\%, Store: 10\%, Other: 50\%. 75\% of \textit{Branch Instructions} are taken. What is the CPI?
@@ -159,6 +173,8 @@
     
     In this case, \textit{Branch Instructions} will cause a 30\% slow-down. We should be able to improve this if we do something a little less na\"ive than just assuming the \textit{Branch} is \textbf{not taken} each time. 
 \end{answered}
+
+\ 
 
 \item Dynamic Branch Prediction
 \begin{answered}
@@ -177,6 +193,8 @@
 
     In this case, \textit{Branch Instructions} will cause a 2\% slow-down. This is significantly better than the previous na\"ive approach. 
 \end{answered}
+
+\ 
 
 \item Dynamic Branch Prediction Components
 \vspace{-0.85cm}
@@ -200,6 +218,8 @@ Things to keep in mind while navigating through the mess that is \textit{branch 
 
 \end{answered}
 
+\ 
+
 \item Branch Target Prediction
 \begin{answered}
 This will help us answer \textbf{(c) If a branch is taken, where does it go?}
@@ -217,6 +237,8 @@ The \textit{Branch Target Buffer (BTB)} does exist on the critical path and ther
 
 With \textit{static targets}, the BTB mechanism will perform well.
 \end{answered}
+
+\ 
 
 \item Branch Target Buffer Example
 \begin{answered}
@@ -275,6 +297,8 @@ The following \textit{example} (Figure \ref{btb001} - Figure \ref{btb007}) assum
 
 \end{answered}
 
+\
+
 \item What bits should you use as index bits and why do we discard the 2-bit least-significant bits?
 \begin{answered}
 The last 2 bits can be ignored because with MIPS, they are 32-bit instructions (PC is 32 bits) that are 4-bytes in size. You can throw away 2 bits because they will be the same (00) for all instructions since the instructions will all be incremented 4 bytes at a time. If you used these bits as BTB index bits, you would reduce your BTB target capacity implicitly. 
@@ -283,6 +307,8 @@ We select lower order 7-bits instead of higher order 7-bits because the lower or
 
 \textit{Is this the best way to do this hashing?} No, there are definitely better and more complicated ways to design a hashing function that better utilizes it's has indices. But this is a good start. 
 \end{answered}
+
+\ 
 
 \item What is the purpose of the TAG entry in the Branch Target Buffer (BTB)?
 \begin{answered}
@@ -308,6 +334,8 @@ And at the \textbf{\textit{BTB} prediction step} in the \textit{Fetch Stage}, th
 \end{answered}
 \vspace{-0.8cm}
 
+\ 
+
 \item Direct Targets and Indirect Targets
 \begin{answered}
 \textit{(a) Why does this simple \textit{Branch Target Buffer (BTB)} work?}
@@ -326,6 +354,8 @@ There are plenty of cases where control instructions use \textbf{indirect target
 \end{itemize}
 \end{answered}
 
+\ 
+
 \item Return Address Stack (RAS)
 \begin{answered}
 The mechanism is a fairly straightforward stack operation. During a function call the next PC, \textit{(PC+4)}, is placed on top of the stack. A return instruction's target prediction is done by popping an element from the stack.
@@ -339,12 +369,16 @@ It has a fixed capacity and hence will not work well for large amounts of instru
 There is usually another level of prediction that will associate a \textit{Program Counter (PC)} with whether the \textbf{Return Address Stack (RAS)} is to be used or not. This will involve additional bits and hardware. 
 \end{answered}
 
+\ 
+
 \item Branch Direction Prediction
 \begin{answered}
 We use a similar strategy from \textit{branch target prediction} where we want to \textit{learn from the past and predict the future}. Instead of learning a mapping from \textit{Program Counter (PC)} to \textit{Target}, here we learn a mapping from \textit{Program Counter (PC)} to a single \textit{Taken or Not Taken} bit. 
 
 Individual conditional branches are often very \textbf{biased}. Usually 90\% branch one way or the other.
 \end{answered}
+
+\ 
 
 \item Bimodal Branch Predictor
 \begin{answered}
@@ -387,6 +421,8 @@ The following \textit{example} assumes a \textbf{Branch History Table (BHT)} wit
 \label{bbp004}
 \end{figure}
 \end{answered}
+
+\ 
 
 \item Two-Bit Saturating Counter (2BC)
 \begin{answered}
@@ -453,10 +489,14 @@ Instead of using just the \textit{Program Counter (PC)} as the index into the \t
 We need to train the counter (BHT) and the BHR (\textit{Branch History Register}) after each branch instruction.
 \end{answered}
 
+\ 
+
 \item GShare Example
 \begin{answered}
-This example is taken from \textit{http://comparchviz.com}.
+Go to \textit{http://comparchviz.com}.
 \end{answered}
+
+\ 
 
 \item Hybrid Tournament Predictor
 \begin{answered}
@@ -464,6 +504,8 @@ A simple \textit{bimodal branch predictor} is good for short term history depend
 
 A \textbf{Hybrid Predictor} combines the above mentioned predictors and introduces a third component called the \textbf{chooser} which learns to predict which of the above two methods to use. This allows the correlated predictor to become smaller than previously defined and results in 90-95\% accuracy. 
 \end{answered}
+
+\
 
 \item Reducing Branch Penalty
 \begin{answered}
@@ -484,6 +526,8 @@ Let's say that Branches: 20\% and 75\% of branches are taken. Out of these branc
 
 \textit{Branch Predictions} are still a big problem even with all these optimizations. For typically large pipelines, mis-predictions cost the system 10+ cycles!
 \end{answered}
+
+\ 
 
 \item Predication
 \begin{answered}

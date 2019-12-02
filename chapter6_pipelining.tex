@@ -29,12 +29,16 @@
         Throughput. In the \textit{laundry example}, pipelining will only enhance performance if you have more than one load of clothes to clean.
         \end{answered}
         
+    \ 
+        
     \item If you have 3 stages - washer, dryer and "folding robot"? How long does one load of laundry take? How long does two loads of laundry take? How long would 100 loads take?
         \begin{answered}
             $1$ load of laundry will take $3$ units of time. $2$ loads of laundry will take $4$ units of time. $100$ loads of laundry will take $104$ units of time. 
             
             To understand why $100$ loads of laundry will take $104$ units of time, understand why $3$ loads of laundry will take $5$ loads of time. \textit{Intuition:} The case(s) when the number of loads of laundry is $\geq$ the number of pipeline stages.
         \end{answered}
+      
+    \ 
         
     \item What is the processor performance equation?
     \begin{answered}
@@ -50,10 +54,14 @@
     Here $\frac{Instruction}{Program}$ refers to the \textbf{Dynamic Instruction Count}. It is the instructions that the processor will actually run during the course of a program and not just the static instructions (eg: loops).
     \end{answered}
     
+    \
+    
     \item Briefly discuss the performance of a Single-Cycle Datapath and mention it's limitations?
     \begin{answered}
     Everything is done within a single clock cycle. This means that the clock cycle is chosen to be the worst-case delay through the circuit - \textit{critical path}. Therefore, performance is limited by the slowest instruction always.
     \end{answered}
+     
+    \ 
         
     \item What are the different stages in the pipelined LC4 datapath?
     \begin{answered}
@@ -67,6 +75,8 @@
     \end{itemize}
     \end{answered}
     
+    \
+    
     \item How is the clock period selected for this pipelined datapath?
     \begin{answered}
     \begin{equation*}
@@ -79,6 +89,8 @@
     The base CPI is $1$ because instructions enter and leave every cycle, but the actual CPI $\geq$ 1 since the pipeline might \textit{stall}. The individual instruction \textbf{latency} will actually \textbf{increase} due to the overhead of the pipelining process, but the benefits of additional throughput make it worth sacrificing latency for.
     \end{answered}
     
+    \
+    
     \item How are the different stages arranged?
     \begin{answered}
     The different stages are delimited by the \textit{pipeline registers}, which are named by the stages they begin at.
@@ -90,6 +102,8 @@
         \item Writeback Register \textbf{(W)}
     \end{itemize}
     \end{answered}
+    
+    \ 
     
     \item Pipeline Example:
     \begin{answered}
@@ -134,6 +148,8 @@
     
     \end{answered}
     
+    \ 
+    
     \item Pipeline Performance:
     \begin{answered}
     In a single-cycle design, if the clock period is \textbf{50ns} and CPI = 1, then your effective performance is \textbf{50ns/insn}.
@@ -162,6 +178,8 @@
     \textbf{Hazard:} A hazard is a result of the existence of a dependence leading to the possibility of wrong instruction order. The effects of a hazard should not be externally visible. \textbf{Stalls} are used to maintain this order by holding a younger instruction in the same stage and propagating an empty instruction (\textbf{no-op}) instead. Hazards are undesirable because the stalls that are introduce result in reduction in performance.
     \end{answered}
     
+    \ 
+    
     \item Data Hazards
     \begin{answered}
     Ignoring \textit{control hazards} for now, let us look at Data Hazards, i.e when two instructions use the same storage locations (memory or register). 
@@ -183,6 +201,8 @@
     At \textbf{Cycle 4} of this example, ADD is writing it's result to R3. LOAD has already read R3 two cycles ago, which means that the value that it currently has is outdated! ADDI also read R3 one cycle ago which means that it's value is outdated too. STORE is currently in the process of reading R3 but it is unclear whether it has the updated value of R3 or not depending on how the \textit{Register File} was implemented (i.e Read-after-Write or Write-after-Read).
     
     \end{answered}
+    
+    \ 
 
     \item What are some initial ways we can try fix this problem?
     \begin{answered}
@@ -217,9 +237,13 @@
     \end{enumerate}
     \end{answered}
     
+    \ 
+    
     \item Bypassing
     \begin{answered}
     For \textit{example}: say we had an instruction [ADD R1, R2 $\rightarrow$ R3] in the \textit{Memory Stage} and an instruction [LOAD 8(R3) $\rightarrow$ R4] in the \textit{Execute Stage}. Since the LOAD instruction is already in the Execute Stage, this tells us that the current value of R3 that the LOAD instruction has is outdated, since the ADD instruction is just about to update it's value. However, at this very moment, nothing catastrophic has happened yet, even though we know it will in the next cycle if left unchecked. 
+    
+    \ 
     
     \textbf{1. MX Bypass:}
     
@@ -229,6 +253,8 @@
     
     There is indeed an additional hardware overhead of performing a bypass operation since we need extra wires and a multiplexer. But these overheads are negligible in terms of the performance gained. Instead of filling that cycle with a \textit{no-op} we were able to make progress at the cost of minimum hardware latency. 
     
+    \ 
+    
     \textbf{2. WX Bypass:}
     
     Similarly, if such a dependence exists across the \textit{Write-back Stage} and the \textit{Execute Stage}, we can perform the same operation and forward this value to the \textit{Execute Stage} with an additional wire and Mux. 
@@ -236,6 +262,8 @@
     \begin{itemize}
         \item \textit{Which ALU input in the Execute Stage can you bypass to?} You can add similar wires and multiplexers and make bypass operations available to both inputs of the ALU. Both \textbf{ALUinA} and \textbf{ALUinB} bypassing is possible. 
     \end{itemize}
+    
+    \
     
     \textbf{3. WM Bypass:}
     
@@ -248,6 +276,8 @@
     \end{enumerate}
     This will not work, because when the LOAD instruction is in the \textit{Write-back Stage}, and the STORE is in the \textit{Memory Stage}, the STORE instruction would have already calculated the address in the \textit{Execute Stage} and hence cannot recalculate the address with the updated value of R3 here. In this case, WM Bypassing will not work.
     \end{answered}
+    
+    \ 
     
     \item Bypass Logic
     \begin{answered}
@@ -262,6 +292,8 @@
         \end{split}
         \end{equation*}        
     \end{answered}
+    
+    \ 
     
     \item Bypass example:
     \begin{answered}
@@ -292,6 +324,8 @@
     \end{center}    
     \end{answered}
     
+    \ 
+    
     \item Load-to-Use Dependency
     \begin{answered}
     Have we prevented all possible data hazards with the above 3 bypassing techniques? \textbf{No}. The load-to-use case is an example where bypassing just doesn't cut it and we have to use a \textbf{Stall}.
@@ -320,6 +354,8 @@
     
     We can also include additional optimization by re-arranging instructions as seen with \textit{software interlocks}, but this time we do it for performance and not for correctness. 
     \end{answered}
+    
+    \ 
 
     \item Structural Hazards:
     \begin{answered}
@@ -332,6 +368,8 @@
             \item All instructions travel through all stages of the circuit
         \end{itemize}
     \end{answered}
+    
+    \ 
     
     \item Structural Hazards and Multiple-Cycle Operations
     \begin{answered}
@@ -415,6 +453,8 @@
     The time from placing a single instruction into the pipeline till it's finished is \textbf{not} faster for pipelining. The reason pipelining \textbf{is faster} is because when many instructions go through the pipeline, instructions in different stages of the pipeline can work in parallel and more instructions can be finished in a given unit of time. \textit{Throughput} is what we improve, not \textit{latency}. But \textit{throughput} is important because computers execute billions of instructions!
    \end{answered}
    
+   \ 
+   
    \item Performance:
    \begin{answered}
    Under ideal conditions and with a large number of instructions, the speed-up from pipelining is approximately equal to the number of pipeline stages. For \textit{example} a five-stage pipeline is nearly five times faster. 
@@ -430,8 +470,9 @@
    \end{equation*}
    \end{answered}
    
-   \item Conditions that make pipelining easier?
+   \item Conditions that make pipelining easier:
    \begin{answered}
+   \vspace{-0.85cm}
    \begin{enumerate}
        \item LC4 instructions are all the same length
        \item LC4 instructions have only a few unique formats
@@ -440,15 +481,21 @@
    \end{enumerate}
    \end{answered}
    
+   \ 
+   
    \item Does bypassing solve all dependence problems?
    \begin{answered}
    No, sometimes we just have to take the \textit{stall} and move on. An \textit{example} is the \textbf{Load-to-Use} condition. 
    \end{answered}
    
+   \ 
+   
    \item What are the consequences of allowing JUMP, BRANCH and ALU instructions to take fewer stages than the five required?
    \begin{answered}
    This would create more problems than it's worth. Additionally, ALU instructions require to go through till the fifth stage since they write back to the destination register. Essentially, we should be looking to optimize our pipeline to require shorter cycles, even if that means splitting the pipeline into more stages.
    \end{answered}
+   
+   \ 
    
    \item What happens when a register is read and written in the same clock cycle?
    \begin{answered}
@@ -457,10 +504,14 @@
    Alternatively, we could also have \textit{Write-after-Read (WAR)} and derive our correctness guarantees accordingly. 
    \end{answered}
    
+   \
+   
    \item Bypass all instructions all the time (!?)
    \begin{answered}
    Some instructions do not write registers, so attempting to add bypassing for all instructions isn't accurate. However, an easily fix for this problem is to check if the \textit{RegisterWrite} signal is \textbf{active} for that particular instruction and decide to bypass accordingly. 
    \end{answered}
+   
+   \
    
    \item MX Bypass
    \begin{answered}
@@ -478,6 +529,8 @@
     \end{center}    
    \end{answered}
    
+   \
+   
    \item WX Bypass
    \begin{answered}
    If the destination register of the instruction in the M$\rightarrow$\textbf{W} stage is the same register as any one of the source registers of the instruction in the D$\rightarrow$\textbf{X} stage, \textbf{and} if a \textit{RegisterWrite} signal is enabled, then a \textbf{WX Bypass} is required.  
@@ -494,10 +547,14 @@
     \end{center}   
    \end{answered}
    
+   \
+   
    \item WM Bypass
    \begin{answered}
    This is a more specific bypass mechanism when you have a LOAD instruction immediately followed by a STORE instruction. This is usually seen in memory-to-memory copies. 
    \end{answered}
+   
+   \
    
    \item Load-to-Use 
    \begin{answered}
