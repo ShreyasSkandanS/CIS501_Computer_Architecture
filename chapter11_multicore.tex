@@ -1,0 +1,195 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Multicore}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\begin{QandA}
+\item Why \textit{Multicore}?
+\begin{answered}
+Consider the following \textit{example} (double precision a $\times$ x + y):
+
+\quad \quad \quad void daxpy(): \{
+
+\quad \quad \quad \quad for(i=0;i$<$SIZE;i++) \{
+
+\quad \quad \quad \quad \quad z[i] = a*x[i] + y[i]
+
+\quad \quad \quad \quad \}
+
+\quad \quad \quad \}
+
+\begin{itemize}
+    \item Every iteration in the loop is \textit{independent}.
+    \item Each iteration is about a dozen instructions (daxpy).
+    \item With our best methods so far (supserscalar, out-of-order, pipeline) we can maybe exploit 4$\times$ (4 wide) or 8$\times$ (8 wide) parallelism at best.
+    \item But if we run this loop 10,000 times, we technically have 10,000 way parallelism which we cannot support with the above methods.
+\end{itemize}
+
+\textit{Q: How would you do this? What is the individual \textbf{workload} for each core?}
+
+\quad The simple way to think about it is to: break up the entire loop into \textbf{N} chunks and allocate them to \textbf{N} cores. These cores will have both \textit{private} as well as \textit{public} variables and in the simplest assumption $SIZE$ is a multiple of $N$.
+
+\quad $N$ threads are then spawned which will handle $\frac{SIZE}{N}$ of the overall workload. 
+
+\ 
+
+\textit{Q: What is an easy way to do this in C++?}
+
+\quad \textbf{OpenMP} allows programmers to define structures in their code that can be \textit{parallelized}. However, these pieces of code must actually be inherently parallel otherwise unpredicted behavior may result. 
+\end{answered}
+
+\ 
+
+\item Energy Efficiency
+\begin{answered}
+Another reason why \textit{multicore} design is popular is because it is more \textit{energy efficient}. 
+
+\textbf{Relationship:} Energy consumption does not scale \textit{linearly} with clock frequency. It is almost \textit{cubic}. 
+
+For \textit{example}, going from a single 1 GHz core to a single 200 MHz core \textit{reduces} energy utilization by 30$\times$. And if you had 5 $\times$ 200 MHz cores, you could still save $\frac{5}{30}=\frac{1}{6}$ of the energy when compared to a single 1 GHz core. 
+\end{answered}
+
+\ 
+
+\item Amdahl's Law
+\begin{answered}
+As we've seen before, this only applies to programs that have portions that can be parallelized. And these portions need to be significant enough to invest the time and effort into optimizing them. 
+\begin{equation*}
+Speedup\ =\ \frac{S+P}{S+\frac{P}{N}}
+\end{equation*}
+Where $S$ is the serial portion, $P$ is the parallel portion and $N$ is the number of cores. 
+\end{answered}
+
+\ 
+
+\item Threading
+\begin{answered}
+With a single processor (\textit{uni-processor design}), there are independent flows of execution. The different threads have \textit{shared} state such as global variables, heaps etc. They also share the same \textit{memory space}. These threads are managed by the \textit{operating system}. 
+
+Programmers will usually explicitly create multiple threads, and all \textbf{loads} and \textbf{stores} go to a single \textit{Shared Memory} space.
+
+This can create non-deterministic behavior such as if \textbf{Thread 1} executes (a) store 1 $\rightarrow$ y and (b) load x and \textbf{Thread 2} executes (a) store 1 $\rightarrow$ x and (b) load y. 
+\end{answered}
+
+\ 
+
+\item A Simple Design
+\begin{answered}
+A simple \textit{Multiprocessor Design} is  to replicate the entire pipeline except \textbf{share the caches}. 
+
+The main invariant here is: 
+
+\quad \textit{LOADs must return the value written by the most recent STORE}
+\end{answered}
+
+\ 
+
+\item What are the \textit{problems} that can arise with \textit{Shared Memory} designs?
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Cache Coherence - Each \textit{core} will have it's own \textit{private cache}, so how do we make one core's \textit{write} to one cache show up in another's cache?
+    \item Parallel Programming - How is the parallelism expressed?
+    \item Synchronization - How do we \textit{regulate} access to shared data and implement \textit{locks}?
+    \item Memory Consistency Models - What kind of \textit{contract} can we design for the \textit{Shared Memory} structure to keep the programmer sane?
+\end{itemize}
+\end{answered}
+
+\
+
+\item Cache Coherence - \textit{Introduction}
+\begin{answered}
+In our simple multiprocessor design, what happens if we decide not to share the L1 cache across different processors? 
+
+Let's have a per-processor \textbf{private cache} instead. If left unchecked, naively this solution will cause inconsistencies across elements in all the different private caches so a \text{Cache Coherence Protocol} must also be introduced that will define how they co-ordinate with each other. 
+
+\ 
+
+The \textit{Shared Memory Invariant} of \textbf{Loads read the value written by the most recent Store} must still hold.
+
+\newpage 
+
+\textbf{Design Decisions:}
+\begin{itemize}
+    \item If there is just a single level of \textit{Shared Cache}, all the different processors will have to interact with the single cache using an interconnect and this can create a \textit{bottleneck} at the \textit{Shared Cache}. Instead, each processor is given a small \textit{Private Cache} in addition to the \textit{Shared Cache}. The \textit{Shared Cache} exists right above the \textit{Memory} layer abstraction. 
+    \item The \textit{Shared Cache} contains a \textbf{State} bit which is either \textit{DIRTY} or \textit{CLEAN}. For \textit{example}, if the Shared Cache contains a cache line that was updated by some processor, the \textit{State Bit} of that cache line is changed to \textit{DIRTY} from \textit{CLEAN} and depending on the policy the \textit{Shared Cache} state is either \textbf{Written-Back} or \textbf{Written-Through} to the Memory. 
+    \item Similarly, each processor's \textit{Private Caches} will also have \textbf{State} bits that do the same at a processor / core level. 
+\end{itemize}
+
+\
+
+\textit{Q: What if a processor $P_{1}$ update's it's copy of a cache line in it's \textit{private cache} (It's state bit is now $DIRTY$) and another processor $P_{0}$ tries to load that value from Memory?}
+
+\quad There are now $3$ versions of that cache line element, i.e one version that lives in \textit{Memory}, one version that lives in the \textit{Shared Cache} with state bit $CLEAN$ and one version that lives in $P_{1}$'s \textit{Private Cache} with state bit $DIRTY$. Which of these values will $P_{0}$ read and which of these values \textbf{should} $P_{0}$ read? If it reads from the \textit{Shared Cache} it will get a stale value. This is the \textbf{Cache Coherence} problem. 
+
+\
+
+\textit{\textbf{Coherence} is a property of the \textbf{Private Caches} since it must be enforced only at the private cache level to guarantee consistency}.
+\end{answered}
+
+\newpage 
+
+\item VI Protocol $-$ \textit{Valid $/$ Invalid}
+
+\begin{answered}
+
+\textit{Idea:} Track every copy of each block by specifying the owner of that block in the \textit{Shared Cache}. This can be done by adding an \textbf{Owner} field to the \textit{Shared Cache} table. 
+
+In the above situation, when $P_{0}$ wants to $LOAD\ [A]$ and if there are 3 different \textit{versions} of $A$, the \textit{Shared Cache Owner} entry will indicate who owns the latest / updated version of $A$ (in our case $P_{1}$) and then $A$ is removed from $P_{1}$'s private cache and transferred to $P_{0}$'s private cache and the \textit{Shared Cache Owner} field is updated to indicate that $P_{0}$ is the new owner of cache line $A$.
+
+The \textit{Tracking of Ownership} is used to \textbf{Validate (V)} or \textbf{Invalidate (I)} a specific cache line and hence maintain consistency.
+
+\ 
+
+\textbf{Discussion:}
+\begin{itemize}
+    \item There can only be at most \textbf{one valid} "copy" of the block.
+    \item If a processor / core wants a "copy", it must find it an invalidate it so that it will then have the only valid "copy". 
+    \item \textit{Problem:} What if multiple processors / cores want to just read this block and not make any changes to it? In this design that won't be possible.
+    \item \textit{On a cache miss, how is the valid copy found?} One approach is to use \textbf{broadcasting / snooping} and the other is to use a \textbf{directory} based method such as the one we previously discussed with the ownership field. The directory based method is more intuitive and commonly used. 
+\end{itemize}
+\end{answered}
+
+\newpage 
+
+\item MSE Protocol $-$ \textit{Modified / Shared / Invalid}
+\begin{answered}
+
+\textit{Idea:} What if we allowed multiple processors access to \textit{READ} but only allowed a single processor access to \textit{WRITE}. This can be done by adding a \textbf{State} bit field to each processors \textit{Private Cache} as well as a \textbf{Sharer} field to the \textit{Shared Cache}, similar to the ownership field from the VI Protocol. 
+
+In this mechanism, there are three possible states:
+\begin{itemize}
+    \item \textbf{Modified (M):} If a processor has this state, it can read / write to a cache line. However, only one processor can access the cache line, i.e the processor that is in state M.
+    \item \textbf{Shared (S):} If a processor has this state, it can only read a cache line. Unlike the previous VI Protocol, multiple processors can be in state S allowing for multiple processors to read from a given cache line.
+    \item \textbf{Invalid (I):} Similar to the VI Protocol this is an invalid state and the processor has no permissions over that cache line.
+    \item \textit{NOTE:} A cache line can only be in \textbf{either} modified (M) or shared (S) state and not both. If it is in both, this implies that one processor could be writing to a line while another is reading from that line and hence result in inconsitent values. 
+\end{itemize}
+
+\end{answered}
+
+\end{QandA}
+
+
+\end{document}
