@@ -198,12 +198,19 @@ These kind of misses are of two types:
     \item \textbf{Upgrade Miss:} If a processor has state $S$ and needs to write to $S$ such as from the point of view of processor $P_{0}$ in the above example.
     \item \textbf{Coherence Miss:} If a processor misses to a block that was evicted by another processor's request such as from the point of view of processor $P_{1}$ in the above example. 
 \end{itemize}
+
+\textbf{False Sharing:}
+
+This is a particular pattern of cache miss where two or more processors share parts of the same block. They don't share the same \textit{bytes} within that block but just different parts of it. This will cause a \textit{ping-pong} behavior between the two processors resulting in poor performance. This is very difficult to diagnose but a solution is to pad each block so that no sub-block regions can be shared. 
+
 \end{answered}
+
+\ 
 
 \item MESI Protocol $-$ \textit{Modified / Exclusive / Shared / Invalid}
 \begin{answered}
 
-Consider the situation when one particular core / processor issues a $LOAD$ instruction followed by a $STORE$ instruction. This would result in an \textbf{upgrade  miss} as well as a \textbf{coherence miss} even if the block is not shared!
+Consider the situation when one particular core / processor issues a $LOAD$ instruction followed by a $STORE$ instruction. This would result in an \textbf{upgrade  miss} as well as a \textbf{coherence miss} even if the block is not shared such as in a single threaded core. And at the very least, it is not unreasonable to expect that a  single threaded core should behave as well as it would on a uni-processor system. 
 
 \textit{Idea:} Add another state \textbf{Exclusive (E)} which can be interpreted as \textit{I have the only cached copy and it is $CLEAN$}.
 
@@ -220,11 +227,29 @@ Consider the situation when one particular core / processor issues a $LOAD$ inst
 
 \newpage 
 
-\item Coherence Protocols
-
+\item MOESI Protocol $-$ \textit{Modified / Ownership / Exclusive / Shared / Invalid}
 \begin{answered}
+A more popular and recent \textit{cache coherence protocol} is $MOESI$. As before, in the \textit{write} state, only one copy may be accessed at a time and if it is \textit{clean}, it is granted the \textit{Exclusive (E)} state. If it is \textit{dirty} it is granted the \textit{Modified (M)} state. 
 
-There are two over-arching views on cache coherence:
+However, previously we did not consider the implications of the \textit{clean} and \textit{dirty} states for the \textit{read} process, where multiple processors may be given access to a cache line. Previously we assigned both \textit{clean} and \textit{dirty} attributes to the \textit{Shared (S)} state. With $MOESI$, we add an additional state called \textit{Ownership (O)} which is when the cache line is read only but \textit{dirty}. The implications here are that this processor is now responsible to \textbf{writeback} this line.
+
+\begin{center}
+\begin{tabular}{ |c|c|c| } 
+ \hline
+ State & Clean & Dirty \\ 
+ \hline
+ One Copy (write) & Exclusive (E) & Modified (M) \\ 
+ $>1$ Copy (read)  & Shared (S) & Owned (O) \\ 
+ \hline
+\end{tabular}
+\end{center}
+\end{answered}
+
+\ 
+
+\item Coherence Protocols
+\begin{answered}
+\vspace{-0.85cm}
 \begin{itemize}
     \item \textbf{Update Based} Cache Coherence: On the lines of a \textit{Write Through} update to all caches $-$ too much traffic and not commonly used anymore.
     \item \textbf{Invalidation Based} Cache Coherence: There are two approaches to the \textit{invalidation} based method:
@@ -232,8 +257,37 @@ There are two over-arching views on cache coherence:
         \item \textit{Snooping} or \textit{Broadcasting}: No explicit state but generates a lot of traffic since each cache request broadcasts it's requests to all the other levels. We will use a \textbf{Shared Bus} to interface the different private caches with the shared cache and memory. 
         \item \textit{Directory Based}: This is what we've seen before where we track the different $sharers$ of blocks and invalidate blocks accordingly. These designs can be either inclusive or exclusive. We will use an \textbf{End to End Interconnect} to interface the different private caches with the shared cache and memory. 
     \end{enumerate}
-    \item While the \textit{Snooping} based method generates more traffic, using more bandwidth with $Shared$ and $Exclusive$ states, we can save 1 entire transaction / hop since processors can \textit{interact} with each other by passing requests. 
-    \item The \textit{Directory} based methods have lower bandwidth consumption and is thus more scalable but individual latencies are longer. 
+    \item While the \textit{Snooping} based method uses more bandwidth with $Shared$ and $Exclusive$ states, we can save 1 entire transaction / hop since processors can \textit{interact} with each other by passing requests. 
+    \item The \textit{Directory} based methods have lower bandwidth consumption, thus more scalable but individual latency is worse. 
+\end{itemize}
+\end{answered}
+
+\newpage
+
+\item Coffman Conditions for Deadlock
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Mutual Exclusion
+    \item Holding and Waiting
+    \item No Pre-emption
+    \item Circular Waiting
+\end{itemize}
+\textit{Note:} If you can break \textbf{any one} of these conditions, you can prevent or stop a deadlock. 
+
+\textit{Note:} Always acquire multiple locks in the same order. Acquiring locks in random order increases the risk of arriving at a deadlock condition - \textit{Dining Philosophers}. 
+\end{answered}
+
+\ 
+
+\item Atomics
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Compare And Swap (CAS)
+    \item Test And Set (TAS)
+    \item Test And Test And Set (TATAS)
+    \item Queue Locks - \textit{release in order} 
 \end{itemize}
 \end{answered}
 
