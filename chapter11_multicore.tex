@@ -291,6 +291,48 @@ However, previously we did not consider the implications of the \textit{clean} a
 \end{itemize}
 \end{answered}
 
+\ 
+
+\item Shared Memory Problems
+\begin{answered}
+If you have two thread $thread\ 1$ and $thread\ 2$; Thread 1 has the following instructions (a) $STORE$ 1 $\rightarrow$ y (b) $LOAD$ x and Thread 2 has the following instructions (a) $STORE$ 1 $\rightarrow$ x and (b) $LOAD$ y. Is there a possibility that at the end of execution you can read $(x=0,y=0)$? Intuitively you would think \textbf{No}, but this situation is possible. 
+\end{answered}
+
+\ 
+
+\item Why reorder memory instructions?
+\begin{answered}
+In the \textbf{hardware}, memory instructions are re-ordered to hide write latency and to simplify out of order execution. In \textbf{compilers}, memory instructions are re-ordered in order to maximize performance during an optimization step.
+\end{answered}
+
+\ 
+
+\item Memory Consistency Models
+\begin{answered}
+A \textit{Memory Consistency Model} specifies the semantics of shared memory operations, i.e they specify \textbf{what values a load may return} as a set of rules. This makes the life of a programmer easier as he/she is now aware of \textit{what} the possible values might be. 
+\begin{enumerate}
+    \item Sequential Consistency (SC): This model is \textit{typically} what programmers expect. Here everybody agrees on the type of interleaving and it is indistinguishable from multi-programmed uni-processors.
+    \item Total Store Order (TSO): Here more behaviors are allowed. It incorporates a \textit{Store Buffer} and stores can be deferred but are put into the cache in order.
+    \item Release Consistency (RC): Even more behaviors are allowed with this model. Here even the \textit{Store Buffer} is un-ordered and stores can be put into the cache in any order.  
+\end{enumerate}
+\begin{equation*}
+    SC \subset TSO \subset RC
+\end{equation*}
+
+With \textit{Total Store Ordering (TSO)} the re-ordering of the following instruction sequence: $Operation\ 1 \rightarrow Operation\ 2$ is allowed if it is a $STORE \rightarrow LOAD$ instruction. If they both are writing to the same memory location, $bypassing$ is required. An additional \textbf{memory barrier} or \textbf{fence} instruction is added. 
+
+\textbf{Important:}  
+
+Because of the \textit{Store Buffer} and the re-ordering of the $STORE$ and $LOAD$ instruction sequence, a situation arises when the caches of both threads or processors contains the older value of the LOAD instruction and thus the previously mentioned condition where $(x=0,y=0)$ becomes possible. This is possible in $x86$, $SPARC$ and $ARM$.
+
+\ 
+
+With \textit{Relaxed Consistency (RC)}, \textbf{ALL} re-orderings are permitted as long as they are \textbf{not} writing to the same memory location. While this may seem like it is allowing for more problems to occur, this actually simplifies out-of-order execution. Along with a \textit{Load Queue (LQ)} we can allow these odd re-orderings and detect and recover from bad re-orderings if they do occur. 
+
+\end{answered}
+
+
+
 \end{QandA}
 
 \newpage
