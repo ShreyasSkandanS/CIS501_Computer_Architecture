@@ -1,0 +1,161 @@
+\documentclass[12pt]{article}
+%\documentclass[10pt,letterpaper]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{cancel}
+\usepackage{soul}
+\newenvironment{QandA}{\begin{enumerate}[label=\bfseries\arabic*.]\bfseries}
+                      {\end{enumerate}}
+\newenvironment{answered}{\par\quad\normalfont}{}
+
+\title{CIS501: Virtual Memory}
+\author[1]{Shreyas S. Shivakumar}
+
+\begin{document}
+
+\maketitle
+
+\section{Lecture Notes}
+
+\ 
+
+\begin{QandA}
+\item Introduction
+\begin{answered}
+The \textit{Operating System} is responsible to manage all the different hardware in a computer system. This encompasses a variety of tasks that run in the background, invisible to the programmer. 
+
+\quad The \textit{Operating System} \textbf{virtualizes hardware} for applications by providing \textit{Abstraction} (threads, files, etc.) and \textit{Isolation} (illusion of private CPU, memory, I/O).
+\end{answered}
+
+\ 
+
+\item Virtualization of a Resource
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item To \textit{virtualize} a resource is to make a \textit{finite} amount of a resource act like an infinite or \textit{very large} amount.
+    \item It is then easier for a programmer to write programs with a virtualized interface.
+    \item The resources that are often virtualized are processors, DRAM and sometimes even an entire machine and operating system.
+\end{itemize}
+\textit{Note:} Virtualization can be thought of as creating a \textit{pretend} resource in place of the original one. 
+\end{answered}
+
+\ 
+
+\item How do you virtualize a processor?
+\begin{answered}
+The goal is to give every program running on the processor the illusion that they are all running on individual processors (\textit{pretend processors}). The \textit{operating system} then needs to be able to switch between the different applications fast enough that the user / application isn't aware that the processor is actually being shared by multiple programs. 
+
+\quad This switching between applications is called \textbf{Context Switching}. 
+
+\quad If \textbf{no state} is involved, this is pretty simple : just flush the pipeline and get rid of any instructions that were in the middle and then start up the new program. This isn't too expensive.
+
+\quad When \textbf{state} is involved, it needs to be saved somewhere and then restored. For now, let's think of the state as the \textit{register files, registers, PC}. 
+\end{answered}
+
+\ 
+
+\item When to perform a \textit{Context Switch}?
+\begin{answered}
+A simple approach is to use a \textit{timer} and each process gets fair access to the CPU. It's more efficient not to rely on programs to voluntarily release the CPU.
+\end{answered}
+
+\ 
+
+\item Virtualizing Memory
+\begin{answered}
+A na\"ive solution is to take the memory state and store it somewhere.. (\textit{but where?}, you are using memory.. \textit{maybe disk?} that's too slow!). 
+
+\textit{Approach:} Instead of trying to take memory state and put it somewhere else (this is very slow), everybody gets a \textit{slice of memory}. Even when you are stopped, that memory is still assigned to you and with some clever book-keeping we can prevent other processors from accessing your slice of that memory. Each slice must stay in place and not get trampled on. 
+
+The subset of that memory that is actually being used can be moved to \textbf{DRAM} and it will behave like a \textit{cache}. The \textit{Operating System} will manage this caching. If something spills out of main memory, it can be pushed to disk. 
+
+\textit{Note:} \textbf{Lots of book-keeping involved!}
+
+\textit{Note:} We want to take pretend memory and multiplex it onto some finite amount of actual memory.
+\end{answered}
+
+\ 
+
+\item Virtual Memory (VM)
+\begin{answered}
+\vspace{-0.85cm}
+\begin{itemize}
+    \item Each program has access to some amount of virtual memory (\textit{pretend memory}). Each program is given the illusion that it has access to a large amount of memory using a level of indirection. 
+    \item For \textit{example:} a 64 bit system will have a virtual memory of $2^{64}$ Bytes in size!
+    \item Programs will then access / reference these \textit{virtual memory locations}. But we will then need to \textbf{translate} this to the actual \textit{physical memory locations}. 
+    \item This \textit{translation} is done at \textbf{page granularity}. This is usually much larger than \textit{byte granularity}. \textit{Pages} are of the order $4\ KB-64\ KB$. 
+    \item Every instruction will generate at least one \textit{virtual} to \textit{physical} address translation.
+    \item \textit{Pro:} You can write your program once and it can be ported to newer machines that are getting bigger and bigger (larger cache capacities).
+    \item \textit{Pro:} Virtual Memory isolates programs from one another.
+    \item \textit{Pro:} Allows multiple programs to run at the same time. Also provides additional \textit{security}.
+    \item \textit{Pro:} Multiple programs can communicate with each other using virtual memory.
+\end{itemize}
+\end{answered}
+
+\ 
+
+\item Address Translation
+\begin{answered}
+\textbf{Virtual Address} to \textbf{Physical Address} mapping is called \textit{Address Translation}. The Virtual Address is split into \textit{Virtual Page Number (VPN)} and \textit{Page Offset (POFS)}. The \textbf{VPN} is translated to \textit{physical page number (PPN)}. The \textit{POFS} is not translated. $[VPN,POFS] \rightarrow [PPN,POFS]$
+
+\ 
+
+Most \textit{Operating Systems} will implement this with a structure called a \textbf{Page Table (PT)}. It maps Virtual Pages to Physical Pages or to Disk addresses. The actual translation process is a \textit{table lookup}. 
+
+\newpage 
+
+\textit{Address Translation Example: How big is the page table on a machine that is a 32-bit machine with 4B page table entries (PTEs) and has 4KB pages}.
+
+\quad Since it is a 32-bit machine, it has 32-bit Virtual Addresses that is equivalent to $2^{32}B=4GB$ of virtual memory. 
+
+$\text{Number of virtual pages}\ =\ \frac{\text{Virtual Memory}}{\text{Page Size}}\ =\ \frac{4GB}{4KB}\ =\ 1\ Million\ VPs$
+
+Since there are 1 Million VPs which are 4 Bytes each this is 4MB. This is then given to every process! 
+
+\begin{itemize}
+    \item If you increase the size of the pages, the size of the table will \textit{reduce}. Say you move from 4KB pages to 64KB pages.
+    \item If you move to a 64-bit machine, this increases drastically. $2^{64}B=19\ Exabytes$. This is \textbf{too large}.
+\end{itemize}
+
+One solution is to use \textit{Multi-Level Page Tables (PT)}. Virtual Page numbers are split into two halves which map to different intermediate tables. The first half indexes one table, whose value is the index to the next table, essentially providing two levels of \textit{indirection}. This can be generalized to many levels. This results in a \textit{sparse} amount of memory since a \textit{large amount of virtual addresses} are \textbf{unused}. 
+\end{answered}
+
+\ 
+
+\item Translation Mechanics
+\begin{answered}
+
+\textit{Q: Why a Translation Lookaside Buffer (TLB)?}
+
+Doing this page translation process every single time can be very slow. \textbf{Translation Lookaside Buffers (TLBs)} are small caches that can help speed this up by caching translations. Instead of \textit{walking the page table} before very $LOAD$, $STORE$ or $FETCH$, only \textit{walk the page table} on a $TLB\ Miss$.
+
+\ 
+
+\textit{Q: Where does the TLB live?}
+
+Conceptually, the \textit{Translation Lookaside Buffer (TLB)} lives between the processor pipeline and the caches. Virtual Addresses come out of the processor, they go through the TLB and Physical Addresses come out of the other side. This indicates a sort of sequential / serial step between the CPU and the Caches. 
+
+\ 
+
+\textit{Q: Can this be improved further?}  
+
+By treating it as a serial operation that exists between CPU and Cache, it ends up adding \textit{one cycle} to $t_{hit}$. A clever trick is to access the TLB in parallel. This is possible as long as the $VPN$ and $index$ fields don't overlap. This is because the \textit{index bits} don't change since the \textit{Page Offset (POFS)} doesn't change between virtual and physical addresses, so you can go ahead and start the TLB access in parallel. Once you have the Physical Address then you can use the \textit{tag} field but that can come later. The only constraint is that \textbf{index bits cannot overlap with VPN bits}. 
+
+\begin{equation*}
+    \frac{\text{cache size}}{\text{associativity}} \leq \text{page size}
+\end{equation*}
+
+\end{answered}
+
+\end{QandA}
+
+\end{document}
